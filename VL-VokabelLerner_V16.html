@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VL">
+<meta name="theme-color" content="#F5F0E8">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22VL%20-%20VokabelLerner%22%2C%22short_name%22%3A%22VL%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F0E8%22%2C%22theme_color%22%3A%22%23F5F0E8%22%7D">
+<title>VL – VokabelLerner</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;1,300&family=DM+Sans:wght@300;400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+#offlineIndicator.show{transform:translateY(0)!important;}
+:root {
+  --bg:#F5F0E8;--card:#FFFDF7;--ink:#1A1A1A;--muted:#8A8075;
+  --accent:#2D6A4F;--accent-light:#D8EFE5;--accent-text:#1A4D37;
+  --noun:#C4728A;--noun-light:#F8E8ED;--noun-text:#8A3A52;
+  --phrase:#9B6DB5;--phrase-light:#F0E8F8;--phrase-text:#5E3A80;
+  --adj:#2D5FA6;--adj-light:#E8F0F8;--adj-text:#1A3D73;
+  --border:#E2DBD0;
+  --neu-bg:#EFF6FF;--neu-border:#BFDBFE;--neu-color:#1D4ED8;
+  --ueben-bg:#CCFBF1;--ueben-color:#0F766E;
+  --goal:#C994BC;--goal-light:#FDF0F7;
+  --radius:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+#loadingScreen{background:var(--bg);align-items:center;justify-content:center}
+.loading-logo{font-family:'Fraunces',serif;font-size:32px;font-weight:700}
+.loading-logo span{color:var(--accent)}
+.loading-spinner{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-top:20px}
+.onboard-wrap{flex:1;display:flex;flex-direction:column;padding:56px 24px 36px;background:var(--bg)}
+.progress-steps{display:flex;gap:6px;margin-bottom:28px}
+.step-dot{height:4px;border-radius:4px;background:var(--border);flex:1;transition:background 0.3s}
+.step-dot.active{background:var(--accent)}
+.onboard-step{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px}
+.onboard-title{font-family:'Fraunces',serif;font-size:26px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.onboard-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.5}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.lang-option{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all 0.15s}
+.lang-option.selected{border-color:var(--accent);background:var(--accent-light)}
+.lang-option-add{background:var(--card);border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.lang-flag{font-size:20px}
+.lang-name{font-size:13px;font-weight:500}
+.lang-native{font-size:11px;color:var(--muted)}
+.onboard-btn{width:100%;padding:15px;border-radius:16px;border:none;background:var(--accent);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;margin-top:auto;cursor:pointer}
+.onboard-btn-sec{width:100%;padding:14px;border-radius:16px;border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);margin-top:8px;cursor:pointer}
+.api-wrap{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.api-label{font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px}
+.api-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;font-family:monospace;color:var(--ink);outline:none}
+.api-input:focus{border-color:var(--accent)}
+.api-hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:56px 20px 0;max-width:480px;margin:0 auto;width:100%}
+.menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:8px;margin:-8px}
+.menu-line{width:22px;height:1.5px;background:var(--ink);border-radius:2px}
+.add-btn{width:54px;height:54px;border-radius:50%;background:var(--accent);border:none;color:white;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(45,106,79,0.35);transition:transform 0.2s}
+.add-btn:hover{transform:scale(1.08)}
+.word-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:110px 20px 40px;max-width:480px;margin:0 auto;width:100%}
+.word-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);width:100%;text-align:center;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);transition:transform 0.15s,border-color 0.3s,background 0.3s}
+.word-card:active{transform:scale(0.985)}
+.card-top-bar{width:100%;height:4px}
+.card-word-section{padding:44px 32px 44px;position:relative;min-height:150px;display:flex;align-items:center;justify-content:center}
+.main-word{font-family:'DM Sans',sans-serif;font-size:42px;font-weight:500;letter-spacing:-1px;line-height:1.15}
+.speaker-btn-trans{position:absolute;top:12px;right:16px;width:34px;height:34px;border-radius:50%;background:transparent;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:color 0.2s;z-index:2}
+.speaker-btn-trans:hover{color:var(--accent)}
+.speaker-btn-trans.speaking{color:var(--accent)}
+.translation-wrap{position:relative}
+.speaker-btn-inline{background:transparent;border:none;cursor:pointer;color:var(--accent);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0}
+.speaker-btn-inline:hover{background:var(--accent-light)}
+.speaker-btn{position:absolute;top:10px;right:16px;width:34px;height:34px;border-radius:50%;background:transparent;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:color 0.2s;z-index:2}
+.speaker-btn:hover{color:var(--accent)}
+.speaker-btn.speaking{color:var(--accent)}
+.word-type-badge{font-family:'Inter',sans-serif;position:absolute;bottom:10px;right:16px;font-size:10px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;padding:3px 10px;border-radius:20px}
+.type-verb{background:var(--accent-light);color:var(--accent-text)}
+.type-noun{background:var(--noun-light);color:var(--noun-text)}
+.type-phrase{background:var(--phrase-light);color:var(--phrase-text)}
+.type-adj{background:var(--adj-light);color:var(--adj-text)}
+.translation-wrap{display:none;padding:20px 32px 28px;border-top:1.5px dashed var(--border);animation:fadeUp 0.22s ease}
+.translation-wrap.visible{display:block}
+.translation-main{font-family:'DM Sans',sans-serif;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:-0.3px}
+.translation-note{font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);margin-top:5px}
+.speak-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;margin-left:8px;vertical-align:middle}
+.speak-btn:hover{color:var(--accent)}
+.word-progress{display:none;width:100%;margin-top:12px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;animation:fadeUp 0.22s ease}
+.word-progress.visible{display:block}
+.wp-label{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px;text-align:center}
+.wp-dirs{display:flex;gap:8px;justify-content:center}
+.wp-dir{flex:1;background:var(--bg);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.wp-dir-flags{display:flex;align-items:center;gap:4px}
+.wp-dir-flag{font-size:16px}
+.wp-dots{display:flex;justify-content:space-between;width:60px}
+.wp-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background 0.3s}
+.wp-dot.done{background:var(--accent)}
+.feedback-row{display:none;gap:10px;width:100%;margin-top:14px}
+.feedback-row.visible{display:flex}
+.fb-btn{flex:1;padding:14px;border-radius:16px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s}
+.fb-wrong{background:var(--noun-light);color:var(--noun-text);border:1.5px solid var(--noun)}
+.fb-wrong:hover{background:var(--noun);color:white}
+.fb-correct{background:var(--accent-light);color:var(--accent-text);border:1.5px solid var(--accent)}
+.fb-correct:hover{background:var(--accent);color:white}
+.fb-mastered{display:none;width:100%;padding:12px;border-radius:16px;border:1.5px solid var(--goal);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:var(--goal-light);color:var(--goal);cursor:pointer;align-items:center;justify-content:center;gap:6px;margin-top:8px}
+.fb-mastered.visible{display:flex}
+.empty-state{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;flex:1;padding:40px;max-width:480px;margin:0 auto;width:100%}
+.empty-state.visible{display:flex}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty-title{font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin-bottom:8px}
+.empty-text{font-size:16px;color:var(--muted);line-height:1.6}
+.menu-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,26,26,0.35);opacity:0;pointer-events:none;transition:opacity 0.3s}
+.menu-overlay.open{opacity:1;pointer-events:all}
+.side-menu{position:fixed;top:0;left:0;bottom:0;width:300px;z-index:300;background:var(--card);transform:translateX(-100%);transition:transform 0.32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto}
+.side-menu.open{transform:translateX(0)}
+.menu-search-wrap{padding:56px 20px 16px;border-bottom:1px solid var(--border)}
+.search-field{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;transition:border-color 0.2s}
+.search-field:focus-within{border-color:var(--neu-color)}
+.search-field input{border:none;background:#fff;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;width:100%}
+.search-field input::placeholder{color:var(--muted)}
+.search-results{display:flex;flex-direction:column;gap:6px;padding:10px 0 4px}
+.sr-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;background:var(--bg);cursor:pointer}
+.sr-item:hover{background:var(--border)}
+.sr-pt{font-size:14px;font-weight:500}
+.sr-de{font-size:12px;color:var(--muted);margin-left:6px}
+.sr-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.lang-switcher{margin:12px 16px;background:var(--bg);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:background 0.15s}
+.lang-switcher:hover{background:var(--border)}
+.lang-switcher-flags{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.switcher-flag{font-size:20px;flex-shrink:0}
+.lang-switch-btn{display:flex;align-items:center;gap:6px;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:20px;padding:8px 14px;flex-shrink:0}
+.lang-switch-label{font-size:12px;font-weight:500;color:var(--accent)}
+.menu-section-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:14px 20px 6px}
+.menu-item{display:flex;align-items:center;gap:14px;padding:10px 20px;cursor:pointer;transition:background 0.15s}
+.menu-item:hover{background:var(--bg)}
+.menu-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.menu-item-name{font-size:14px;font-weight:500;flex:1}
+.menu-item-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.menu-badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px}
+.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(26,26,26,0.4);display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:28px 28px 0 0;padding:24px 24px 48px;width:100%;max-width:480px;animation:slideUp 0.3s cubic-bezier(.4,0,.2,1);position:relative;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 22px}
+.word-type-chip{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);font-size:13px;cursor:pointer;transition:all 0.15s}
+.word-type-chip:hover{border-color:var(--accent)}
+.unsure-item{background:var(--card);border:1.5px solid #E8D5A0;border-radius:16px;margin:8px 20px;padding:16px;position:relative}
+.unsure-item-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.unsure-edit-btn{width:36px;height:36px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.15s;flex-shrink:0}
+.unsure-edit-btn:hover{background:var(--border)}
+.unsure-words{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.unsure-pt{font-size:18px;font-weight:500;color:var(--ink)}
+.unsure-de{font-size:18px;color:var(--accent)}
+.unsure-btns{display:flex;gap:8px}
+.unsure-btn{flex:1;padding:11px;border-radius:12px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s}
+.unsure-btn-keep{background:var(--accent-light);color:var(--accent-text);border:1.5px solid var(--accent)}
+.unsure-btn-keep.selected{background:var(--accent);color:white}
+.unsure-btn-keep.unselected{background:var(--bg);color:var(--muted);border-color:var(--border);opacity:0.6}
+.unsure-btn-remove{background:var(--noun-light);color:var(--noun-text);border:1.5px solid var(--noun)}
+.unsure-btn-remove.selected{background:var(--noun);color:white}
+.unsure-btn-remove.unselected{background:var(--bg);color:var(--muted);border-color:var(--border);opacity:0.6}
+.word-type-chip.selected{background:var(--accent-light);border-color:var(--accent);color:var(--accent-text)}
+.modal-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:18px}
+.modal-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);cursor:pointer;font-size:17px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:background 0.15s}
+.modal-close:hover{background:var(--border)}
+.field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:7px;margin-top:14px}
+.field-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;background:#fff;color:var(--ink);outline:none;transition:border-color 0.2s}
+.field-input:focus{border-color:var(--accent)}
+.input-row{display:flex;gap:8px;align-items:center}
+.camera-btn{width:46px;height:46px;border-radius:12px;background:var(--neu-bg);border:1.5px solid var(--neu-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
+.ai-box{background:var(--accent-light);border-radius:16px;padding:14px 16px;margin-top:14px}
+.ai-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--accent);margin-bottom:10px}
+.ai-loading{font-size:13px;color:var(--accent-text);display:flex;align-items:center;gap:8px}
+.ai-spinner{width:14px;height:14px;border:2px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+.ai-suggestion{background:white;border:1.5px solid transparent;border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:border-color 0.15s}
+.ai-suggestion:last-child{margin-bottom:0}
+.ai-suggestion.selected{border-color:var(--accent)}
+.ai-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px}
+.ai-suggestion.selected .ai-check{background:var(--accent);border-color:var(--accent);color:white}
+.ai-word{font-size:14px;font-weight:500;flex:1}
+.ai-note{font-size:12px;color:var(--muted);margin-top:1px}
+.ai-type{font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+.ai-hint{font-size:11px;color:var(--accent-text);margin-top:8px}
+.ai-error{font-size:13px;color:var(--noun-text)}
+.save-btn{width:100%;padding:15px;border-radius:16px;border:none;background:var(--accent);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-top:18px;transition:opacity 0.2s}
+.save-btn:hover{opacity:0.9}
+.save-btn:disabled{opacity:0.4;cursor:not-allowed}
+.subscreen{position:fixed;inset:0;z-index:350;background:var(--bg);display:none;flex-direction:column}
+.subscreen.open{display:flex}
+.subscreen-header{padding:56px 20px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.back-btn{width:44px;height:44px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;transition:background 0.15s}
+.back-btn:hover{background:var(--border)}
+.subscreen-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600}
+.subscreen-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+.list-item{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:14px}
+.li-bar{width:4px;height:44px;border-radius:3px;flex-shrink:0}
+.li-pt{font-family:'Fraunces',serif;font-size:18px;font-weight:600}
+.li-de{font-size:13px;color:var(--muted);margin-top:2px}
+.li-progress{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.mini-dir{display:flex;align-items:center;gap:4px}
+.mini-label{font-size:10px;color:var(--muted)}
+.mini-dots{display:flex;gap:3px}
+.mini-dot{width:7px;height:7px;border-radius:50%;background:var(--border)}
+.mini-dot.done{background:var(--accent)}
+.lang-profile{background:var(--bg);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s}
+.lang-profile:hover{border-color:var(--accent)}
+.lang-profile.active{border-color:var(--accent);background:var(--accent-light)}
+.lp-left{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.lp-flags{display:flex;align-items:center;gap:10px}
+.lp-flag{font-size:22px}
+.lp-chips{display:flex;gap:4px}
+.lp-chip{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:500;background:var(--card);color:var(--muted)}
+.lp-name{flex:1;font-size:15px;padding-left:4px}
+.lp-check{width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lang-add-profile{background:var(--bg);border:1.5px dashed var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer}
+.goal-type-selector{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;cursor:pointer}
+.goal-type-row{display:flex;align-items:center;justify-content:space-between}
+.goal-type-left{display:flex;align-items:center;gap:10px}
+.goal-type-icon{font-size:22px}
+.goal-type-text{font-size:22px;font-weight:600;color:var(--ink);padding-left:18px}
+.goal-type-arrow{font-size:28px;color:var(--muted);transition:transform 0.2s;line-height:1;width:44px;height:44px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.goal-type-arrow.open{transform:rotate(180deg)}
+.goal-type-options{overflow:hidden;max-height:0;transition:max-height 0.25s ease}
+.goal-type-options.open{max-height:200px}
+.goal-type-divider{height:1px;background:var(--border);margin:14px 0 4px}
+.goal-type-option{display:flex;align-items:center;gap:12px;padding:12px 4px;cursor:pointer;border-radius:10px;transition:background 0.15s}
+.goal-type-option:hover{background:var(--bg)}
+.goal-type-option-text{font-size:15px;color:var(--ink)}
+.goal-type-option-check{margin-left:auto;color:var(--goal);font-size:16px}
+.goal-amount-wrap{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px 20px}
+.goal-amount-label{font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:14px}
+.goal-amount-row{display:flex;align-items:center;justify-content:space-between}
+.goal-stepper{width:38px;height:38px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer}
+.goal-number-wrap{text-align:center}
+.goal-number-input{font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:var(--goal);width:100px;text-align:center;border:none;background:transparent;outline:none;-moz-appearance:textfield}
+.goal-number-input::-webkit-outer-spin-button,.goal-number-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.goal-unit{font-size:12px;color:var(--muted);margin-top:4px}
+.goal-progress-wrap{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px 20px}
+.goal-progress-top{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px}
+.goal-progress-bar{height:8px;background:var(--bg);border-radius:8px;overflow:hidden}
+.goal-progress-fill{height:100%;background:var(--goal);border-radius:8px;transition:width 0.4s ease}
+.goal-progress-nums{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.reminder-row{background:var(--goal-light);border:1.5px solid var(--goal);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.reminder-text{flex:1}
+.reminder-title{font-size:12px;font-weight:500;color:var(--goal)}
+.reminder-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.toggle{width:38px;height:22px;border-radius:11px;position:relative;flex-shrink:0;cursor:pointer;transition:background 0.2s}
+.toggle.on{background:var(--goal)}
+.toggle.off{background:var(--border)}
+.toggle-knob{position:absolute;top:3px;width:16px;height:16px;background:white;border-radius:50%;transition:left 0.2s}
+.toggle.on .toggle-knob{left:19px}
+.toggle.off .toggle-knob{left:3px}
+.goal-save-btn{width:100%;padding:15px;border-radius:16px;border:none;background:var(--goal);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
+.import-box{border:2px dashed var(--border);border-radius:16px;padding:32px 20px;text-align:center;background:var(--card);cursor:pointer;transition:all 0.2s}
+.import-box:hover{border-color:var(--accent);background:var(--accent-light)}
+.import-box-title{font-size:15px;font-weight:500;margin-bottom:4px;margin-top:10px}
+.import-box-sub{font-size:13px;color:var(--muted)}
+.import-hint{background:var(--accent-light);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--accent-text);line-height:1.5}
+.photo-word-item{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color 0.15s;margin-bottom:8px}
+.photo-word-item.selected{border-color:var(--accent)}
+.photo-word-name{font-size:15px;font-weight:500;flex:1}
+.photo-word-trans{font-size:12px;color:var(--accent);margin-top:2px}
+.photo-word-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.photo-word-item.selected .photo-word-check{background:var(--accent);border-color:var(--accent)}
+.goal-achieved-screen{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden}
+.goal-achieved-screen.show{display:flex;animation:goalFlash 4s ease forwards}
+@keyframes goalFlash{0%{background:var(--bg)}100%{background:var(--bg)}}
+.goal-star{font-size:96px;animation:starPop 0.6s cubic-bezier(.4,0,.2,1);margin-bottom:4px}
+@keyframes starPop{0%{transform:scale(0) rotate(-20deg);opacity:0}70%{transform:scale(1.3) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.goal-sparkle{position:absolute;border-radius:50%;background:var(--goal);opacity:0.5;animation:floatBubble 3s ease-in-out infinite}
+@keyframes floatBubble{0%{transform:translateY(0) scale(1);opacity:0.5}50%{transform:translateY(-20px) scale(1.15);opacity:0.7}100%{transform:translateY(0) scale(1);opacity:0.5}}
+.goal-achieved-title{font-family:'Fraunces',serif;font-size:38px;font-weight:700;color:var(--goal);margin:12px 0 6px;letter-spacing:-0.5px}
+.goal-achieved-sub,.goal-achieved-extra{font-size:14px;color:var(--muted)}
+.goal-achieved-extra{color:var(--goal);font-weight:500;margin-top:8px}
+.processing-overlay{position:fixed;inset:0;z-index:500;background:rgba(26,26,26,0.6);display:none;align-items:center;justify-content:center}
+.processing-overlay.open{display:flex}
+.processing-box{background:var(--card);border-radius:20px;padding:32px 40px;text-align:center;max-width:300px;width:90%}
+.processing-spinner{width:36px;height:36px;border:3px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+.processing-title{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:6px}
+.processing-text{font-size:14px;color:var(--muted)}
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:white;border-radius:20px;padding:10px 20px;font-size:13px;font-weight:500;z-index:999;transition:transform 0.3s cubic-bezier(.4,0,.2,1),opacity 0.3s;opacity:0;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.correct{background:var(--accent)}
+.toast.wrong{background:var(--noun)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="offlineIndicator" style="position:fixed;top:0;left:0;right:0;background:#FFF8E8;color:#8A7340;padding:8px 16px;text-align:center;font-size:13px;font-family:'Inter',sans-serif;border-bottom:1px solid #E8D5A0;z-index:9999;transform:translateY(-100%);transition:transform 0.3s ease;">
+  <span style="margin-right:6px;">📵</span>Offline – Änderungen werden synchronisiert sobald wieder verbunden
+</div>
+
+<div class="screen active" id="loadingScreen">
+  <div class="loading-logo">VL<span>.</span></div>
+  <div class="loading-spinner"></div>
+</div>
+
+<div class="screen" id="errorScreen">
+  <div class="onboard-wrap" style="text-align:center;padding-top:80px;">
+    <div style="font-size:60px;margin-bottom:24px;">😕</div>
+    <div style="font-family:'Fraunces',serif;font-size:24px;margin-bottom:14px;">Verbindung fehlgeschlagen</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5;">Deine Daten konnten nicht geladen werden. Bitte prüfe deine Internetverbindung und versuche es erneut.</div>
+    <button class="onboard-btn" onclick="location.reload()" style="margin-top:0;">Erneut versuchen</button>
+    <button class="onboard-btn-sec" onclick="logout()" style="margin-top:8px;">Abmelden</button>
+  </div>
+</div>
+
+
+<div class="screen" id="loginScreen">
+  <div class="onboard-wrap">
+    <div style="text-align:center;margin-bottom:32px;margin-top:40px;">
+      <div class="loading-logo" style="font-size:42px;margin-bottom:8px;">VL<span>.</span></div>
+      <div style="font-size:14px;color:var(--muted);">VokabelLerner</div>
+    </div>
+    <div class="onboard-title" style="text-align:center;">Willkommen!</div>
+    <div class="onboard-sub" style="text-align:center;margin-bottom:28px;">Melde dich mit deiner E-Mail an. Du bekommst einen Login-Link zugeschickt – kein Passwort nötig.</div>
+    <div class="api-wrap" style="margin-bottom:14px;">
+      <div class="api-label">E-Mail-Adresse</div>
+      <input class="api-input" type="email" id="loginEmail" placeholder="deine@email.de" style="font-family:'DM Sans',sans-serif;font-size:15px;" autocomplete="email">
+    </div>
+    <div id="loginMessage" style="display:none;font-size:13px;padding:12px 14px;border-radius:12px;margin-bottom:12px;"></div>
+    <button class="onboard-btn" id="loginBtn" onclick="sendMagicLink()" style="margin-top:auto;">Login-Link senden</button>
+  </div>
+</div>
+
+<div class="screen" id="loginSentScreen">
+  <div class="onboard-wrap" style="justify-content:center;">
+    <div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:64px;margin-bottom:20px;">📬</div>
+      <div class="onboard-title" style="font-size:28px;">Mail gesendet!</div>
+      <div class="onboard-sub" style="font-size:15px;line-height:1.6;margin-top:12px;">Wir haben dir einen Login-Link an <strong id="sentToEmail"></strong> geschickt.<br><br>Öffne die Mail und klicke auf den Link – dann bist du eingeloggt!</div>
+      <button class="onboard-btn-sec" onclick="showScreen('loginScreen')" style="margin-top:32px;">Andere E-Mail verwenden</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="onboard1Screen">
+  <div class="onboard-wrap">
+    <div class="progress-steps"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div></div>
+    <div class="onboard-step">Schritt 1 von 3</div>
+    <div class="onboard-title">Was ist deine Muttersprache?</div>
+    <div class="onboard-sub">Die App übersetzt immer in diese Sprache.</div>
+    <div class="lang-grid" id="nativeLangGrid"></div>
+    <button class="onboard-btn" onclick="goToOnboard2()">Weiter <span style="font-size:20px;margin-left:10px;display:inline-block;vertical-align:middle;">→</span></button>
+  </div>
+</div>
+
+<div class="screen" id="onboard2Screen">
+  <div class="onboard-wrap">
+    <div class="progress-steps"><div class="step-dot active"></div><div class="step-dot active"></div><div class="step-dot"></div></div>
+    <div class="onboard-step">Schritt 2 von 3</div>
+    <div class="onboard-title">Welche Sprache lernst du?</div>
+    <div class="onboard-sub">Weitere Sprachen kannst du jederzeit hinzufügen.</div>
+    <div class="lang-grid" id="learnLangGrid"></div>
+    <button class="onboard-btn" onclick="goToOnboard3()">Weiter <span style="font-size:20px;margin-left:10px;display:inline-block;vertical-align:middle;">→</span></button>
+  </div>
+</div>
+
+<div class="screen" id="onboard3Screen">
+  <div class="onboard-wrap">
+    <div class="progress-steps"><div class="step-dot active"></div><div class="step-dot active"></div><div class="step-dot active"></div></div>
+    <div class="onboard-step">Schritt 3 von 3</div>
+    <div class="onboard-title">KI-Funktionen aktivieren</div>
+    <div class="onboard-sub">Füge deinen Anthropic API-Key ein um KI-Übersetzungen, Foto- und Link-Import zu nutzen.</div>
+    <div class="api-wrap">
+      <div class="api-label">Anthropic API Key</div>
+      <input class="api-input" type="password" id="onboardApiKey" placeholder="sk-ant-…">
+      <div class="api-hint">Kostenlos auf platform.anthropic.com — ca. 0,01€ pro 100 Übersetzungen</div>
+    </div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;">
+      <button class="onboard-btn" onclick="finishOnboarding()">App starten <span style="font-size:20px;margin-left:10px;display:inline-block;vertical-align:middle;">→</span></button>
+      <button class="onboard-btn-sec" onclick="finishOnboarding()">Später einrichten</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="mainScreen">
+  <div class="topbar">
+    <div class="menu-btn" onclick="openMenu()"><div class="menu-line"></div><div class="menu-line"></div><div class="menu-line"></div></div>
+    <button class="add-btn" onclick="openAddModal()">＋</button>
+  </div>
+  <div class="word-area" id="wordArea">
+    <div class="word-card" id="wordCard" onclick="revealWord()">
+      <div class="card-top-bar" id="cardTopBar"></div>
+      <div class="card-word-section">
+        <button class="speaker-btn" id="speakerBtn" onclick="event.stopPropagation();speakCurrentWord()" style="display:none;" title="Aussprechen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 8.5C16.5 9.5 17 10.7 17 12C17 13.3 16.5 14.5 15.5 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5C21 7 22 9.4 22 12C22 14.6 21 17 19 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <div class="main-word" id="mainWord">…</div>
+        <div class="word-type-badge" id="typeBadge" style="display:none"></div>
+      </div>
+      <div class="translation-wrap" id="translationWrap">
+        <button class="speaker-btn-trans" id="speakerBtnTrans" onclick="event.stopPropagation();speakCurrentWord()" style="display:none;" title="Aussprechen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 8.5C16.5 9.5 17 10.7 17 12C17 13.3 16.5 14.5 15.5 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5C21 7 22 9.4 22 12C22 14.6 21 17 19 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <div id="translationContent"></div>
+      </div>
+    </div>
+    <div class="word-progress" id="wordProgress">
+      <div class="wp-label">Fortschritt dieses Wortes</div>
+      <div class="wp-dirs">
+        <div class="wp-dir">
+          <div class="wp-dir-flags"><span class="wp-dir-flag" id="f1a">🇩🇪</span><svg width="18" height="10" viewBox="0 0 22 10" fill="none"><path d="M1 5H21" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 1L21 5L16 9" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="wp-dir-flag" id="f1b">🇵🇹</span></div>
+          <div class="wp-dots" id="dots1"></div>
+        </div>
+        <div class="wp-dir">
+          <div class="wp-dir-flags"><span class="wp-dir-flag" id="f2a">🇵🇹</span><svg width="18" height="10" viewBox="0 0 22 10" fill="none"><path d="M1 5H21" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 1L21 5L16 9" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="wp-dir-flag" id="f2b">🇩🇪</span></div>
+          <div class="wp-dots" id="dots2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-row" id="feedbackRow">
+      <button class="fb-btn fb-wrong" onclick="handleFeedback(false)">✗ &nbsp;Falsch</button>
+      <button class="fb-btn fb-correct" onclick="handleFeedback(true)">✓ &nbsp;Richtig</button>
+    </div>
+    <button class="fb-mastered" id="masteredBtn" onclick="handleMastered()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5H13L9.5 7.5L11 12L7 9.5L3 12L4.5 7.5L1 5H5.5L7 1Z" stroke="#C994BC" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Schon beherrscht
+    </button>
+  </div>
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon" style="font-size:64px;">✨</div>
+    <div class="empty-title">Noch keine Wörter zum Lernen</div>
+    <div class="empty-text">Füge neue Wörter über den ＋ Button hinzu oder importiere eine Liste über das Menü.</div>
+  </div>
+</div>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<div class="side-menu" id="sideMenu">
+  <div class="menu-search-wrap">
+    <div class="search-field">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 6.5C1 3.46 3.46 1 6.5 1C9.54 1 12 3.46 12 6.5C12 9.54 9.54 12 6.5 12C3.46 12 1 9.54 1 6.5Z" stroke="var(--muted)" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <input type="text" placeholder="Wort suchen…" id="searchInput" oninput="handleSearch(this.value)">
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="lang-switcher" onclick="openLangProfiles()">
+    <div class="lang-switcher-flags"><span class="switcher-flag" id="sf1">🇩🇪</span><svg width="28" height="14" viewBox="0 0 28 14" fill="none"><path d="M2 7H26" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/><path d="M20 2L26 7L20 12" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 2L2 7L8 12" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="switcher-flag" id="sf2">🇵🇹</span></div>
+    <div class="lang-switch-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M4 12C4 7.6 7.6 4 12 4C14.6 4 17 5.3 18.4 7.3" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round"/><path d="M16 7H19V4" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12C20 16.4 16.4 20 12 20C9.4 20 7 18.7 5.6 16.7" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round"/><path d="M8 17H5V20" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lang-switch-label">Wechseln</span></div>
+  </div>
+  <div class="menu-section-label">Vokabellisten</div>
+  <div class="menu-item" onclick="openWordList('neu')"><div class="menu-icon" style="background:var(--neu-bg)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#93C5FD" stroke-width="1.5"/></svg></div><div style="flex:1"><div class="menu-item-name">Neu</div><div class="menu-item-sub" id="mNeu">0 Wörter</div></div><span class="menu-badge" style="background:var(--neu-bg);color:var(--neu-color)" id="bNeu">0</span></div>
+  <div class="menu-item" onclick="openWordList('ueben')"><div class="menu-icon" style="background:var(--ueben-bg)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 13L6 9M6 9L8 11L12 5M12 5H9M12 5V8" stroke="#0F766E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Üben</div><div class="menu-item-sub" id="mUeben">0 Wörter</div></div><span class="menu-badge" style="background:var(--ueben-bg);color:var(--ueben-color)" id="bUeben">0</span></div>
+  <div class="menu-item" onclick="openWordList('beherrscht')"><div class="menu-icon" style="background:#1E3A8A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Beherrscht</div><div class="menu-item-sub" id="mBeh">0 Wörter</div></div><span class="menu-badge" style="background:#DBEAFE;color:#1E3A8A" id="bBeh">0</span></div>
+  <div class="menu-section-label">Ziel</div>
+  <div class="menu-item" onclick="openGoal()"><div class="menu-icon" style="background:var(--goal-light)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L9.5 5.5H14L10.5 8L12 12.5L8 10L4 12.5L5.5 8L2 5.5H6.5L8 1.5Z" stroke="#C994BC" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 14.5H10M8 12V14.5" stroke="#C994BC" stroke-width="1.3" stroke-linecap="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Lernziel</div><div class="menu-item-sub" id="mGoal" style="color:var(--goal)">Nicht gesetzt</div></div></div>
+  <div class="menu-section-label">Import</div>
+  <div class="menu-item" onclick="openPhotoImport()"><div class="menu-icon" style="background:#F1F1EF"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="#6B7280" stroke-width="1.5"/><circle cx="5.5" cy="6.5" r="1" stroke="#6B7280" stroke-width="1.2"/><path d="M2 11L5 8L7.5 10.5L10 8.5L14 11" stroke="#6B7280" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Foto</div></div></div>
+  <div class="menu-item" onclick="openFileImport()"><div class="menu-icon" style="background:#F1F1EF"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2H9.5L13 5.5V14H4V2Z" stroke="#6B7280" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 2V5.5H13" stroke="#6B7280" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 8.5H10M6 11H10" stroke="#6B7280" stroke-width="1.2" stroke-linecap="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Datei</div></div></div>
+  <div class="menu-item" onclick="openLinkImport()"><div class="menu-icon" style="background:#F1F1EF"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5C7.2 10.3 8.4 10.4 9.2 9.7L11.7 7.2C12.5 6.4 12.5 5.1 11.7 4.3C10.9 3.5 9.6 3.5 8.8 4.3L7.6 5.5" stroke="#6B7280" stroke-width="1.4" stroke-linecap="round"/><path d="M9.5 6.5C8.8 5.7 7.6 5.6 6.8 6.3L4.3 8.8C3.5 9.6 3.5 10.9 4.3 11.7C5.1 12.5 6.4 12.5 7.2 11.7L8.4 10.5" stroke="#6B7280" stroke-width="1.4" stroke-linecap="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Link</div></div></div>
+  <div class="menu-item" onclick="openApiKeyModal()"><div class="menu-icon" style="background:#F1F1EF"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#6B7280" stroke-width="1.4"/><path d="M8 5.5V8.5M8 10.5V10.3" stroke="#6B7280" stroke-width="1.4" stroke-linecap="round"/></svg></div><div style="flex:1"><div class="menu-item-name">API Key</div></div></div>
+  <div class="menu-section-label">Konto</div>
+  <div class="menu-item" onclick="logout()"><div class="menu-icon" style="background:var(--noun-light)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4V3C6 2.4 6.4 2 7 2H12C12.6 2 13 2.4 13 3V13C13 13.6 12.6 14 12 14H7C6.4 14 6 13.6 6 13V12" stroke="#8A3A52" stroke-width="1.5" stroke-linecap="round"/><path d="M9 8H2M2 8L4 6M2 8L4 10" stroke="#8A3A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="menu-item-name">Abmelden</div></div></div>
+</div>
+
+<!-- Add Word Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    <div class="modal-title">Wort hinzufügen</div>
+    <div class="field-label" id="addLearnLabel">Lernsprache</div>
+    <div class="input-row">
+      <input class="field-input" type="text" id="newWordInput" placeholder="z.B. jantar" oninput="onWordInput(this.value)" style="flex:1;margin:0;">
+      <div class="camera-btn" onclick="document.getElementById('addPhotoInput').click()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="2" stroke="#1D4ED8" stroke-width="1.5"/><circle cx="10" cy="11" r="3.5" stroke="#1D4ED8" stroke-width="1.5"/><path d="M7 5L8 3H12L13 5" stroke="#1D4ED8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <input type="file" id="addPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleAddPhoto(this)">
+    </div>
+    <div class="field-label" id="addNativeLabel">Muttersprache</div>
+    <input class="field-input" type="text" id="newWordTrans" placeholder="z.B. Abendessen" oninput="onWordInputNative(this.value)">
+    <div class="field-label">Wortart (optional)</div>
+    <div id="wordTypeSelect" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="word-type-chip" data-type="" onclick="selectWordType(this)">—</div>
+      <div class="word-type-chip" data-type="verb" onclick="selectWordType(this)">Verb</div>
+      <div class="word-type-chip" data-type="noun" onclick="selectWordType(this)">Nomen</div>
+      <div class="word-type-chip" data-type="adj" onclick="selectWordType(this)">Adjektiv</div>
+      <div class="word-type-chip" data-type="adv" onclick="selectWordType(this)">Adverb</div>
+      <div class="word-type-chip" data-type="phrase" onclick="selectWordType(this)">Phrase</div>
+    </div>
+    <div class="ai-box" id="aiBox" style="display:none">
+      <div class="ai-label" id="aiLabel">✦ KI-Vorschläge</div>
+      <div id="aiSuggestions"></div>
+      <div class="ai-hint" id="aiHint" style="display:none">Wähle eine oder mehrere Bedeutungen</div>
+    </div>
+    <div id="kiCorrectionHint" style="display:none;font-family:'Inter',sans-serif;font-size:14px;color:#2D6A4F;margin-top:14px;padding:12px 14px;background:#D8EFE5;border-radius:12px;line-height:1.5;">
+      <span style="font-weight:500;">✓ KI-Korrektur</span><br>
+      <span id="kiCorrectionText" style="font-size:14px;"></span>
+    </div>
+    <div id="kiUnsureBox" style="display:none;background:#FFF8E8;border:1.5px solid #E8D5A0;border-radius:14px;padding:14px 16px;margin-top:14px;">
+      <div style="font-size:18px;margin-bottom:6px;">🤔</div>
+      <div style="font-size:13px;color:#8A7340;line-height:1.5;">Diese Übersetzung konnte nicht verifiziert werden. Es könnte Umgangssprache oder ein Eigenname sein.</div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="saveNewWordsForce()" style="flex:1;padding:10px;border-radius:12px;border:none;background:#2D6A4F;color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Trotzdem speichern</button>
+        <button onclick="cancelUnsure()" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Abbrechen</button>
+      </div>
+    </div>
+    <button class="save-btn" id="addSaveBtn" onclick="saveNewWords()" disabled>Speichern</button>
+  </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="apiKeyModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('apiKeyModal')">✕</button>
+    <div class="modal-title">API Key</div>
+    <div class="api-wrap" style="margin-bottom:0;">
+      <div class="api-label">Anthropic API Key</div>
+      <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-…">
+      <div class="api-hint">Kostenlos auf platform.anthropic.com erstellen</div>
+    </div>
+    <button class="save-btn" onclick="saveApiKey()">Speichern</button>
+  </div>
+</div>
+
+<!-- Photo Import Modal -->
+<div class="modal-overlay" id="photoModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('photoModal')">✕</button>
+    <div class="modal-title">Foto importieren</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.6">Fotografiere deine Vokabelliste. Die KI erkennt Wortpaare automatisch.</p>
+    <div class="import-box" onclick="document.getElementById('photoImportInput').click()">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="24" rx="4" stroke="var(--muted)" stroke-width="2"/><circle cx="20" cy="20" r="7" stroke="var(--muted)" stroke-width="2"/><path d="M14 8L16 4H24L26 8" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="import-box-title">Foto aufnehmen</div>
+      <div class="import-box-sub">oder aus Galerie wählen</div>
+    </div>
+    <input type="file" id="photoImportInput" accept="image/*" style="display:none" onchange="handlePhotoImport(this)">
+    <div class="import-hint" style="margin-top:12px;">💡 Funktioniert am besten mit klaren Vokabellisten.</div>
+  </div>
+</div>
+
+<!-- File Import Modal -->
+<div class="modal-overlay" id="fileModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('fileModal')">✕</button>
+    <div class="modal-title">Datei importieren</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.6">Wähle eine CSV-Datei aus. Die App liest die Wörter automatisch ein.</p>
+    <div class="import-box" onclick="document.getElementById('fileImportInput').click()">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M8 4H26L34 12V36H8V4Z" stroke="var(--muted)" stroke-width="2" stroke-linejoin="round"/><path d="M26 4V12H34" stroke="var(--muted)" stroke-width="2" stroke-linejoin="round"/><path d="M14 20H26M14 26H26" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="import-box-title">CSV-Datei auswählen</div>
+      <div class="import-box-sub">Beispiel: Portugiesisch - Deutsch</div>
+    </div>
+    <input type="file" id="fileImportInput" accept=".csv,.txt" style="display:none" onchange="handleFileImport(this)">
+  </div>
+</div>
+
+<!-- Link Import Modal -->
+<div class="modal-overlay" id="linkModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('linkModal')">✕</button>
+    <div class="modal-title">Link importieren</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.6">Füge einen Link zu einer Vokabelliste ein.</p>
+    <div class="field-label">URL</div>
+    <input class="field-input" type="url" id="linkImportUrl" placeholder="https://www.beispiel.de/vokabeln">
+    <button class="save-btn" onclick="handleLinkImport()" style="margin-top:14px;">Wörter importieren</button>
+  </div>
+</div>
+
+<!-- Word List Subscreen -->
+<div class="subscreen" id="wordListScreen">
+  <div class="subscreen-header">
+    <div class="back-btn" onclick="closeSubscreen('wordListScreen')">←</div>
+    <div class="subscreen-title" id="wordListTitle">Neu</div>
+    <span style="margin-left:auto;font-size:13px;color:var(--muted)" id="wordListCount"></span>
+  </div>
+  <div id="wordListSearchBar" style="padding:8px 20px 0 20px;display:none;">
+    <input type="text" id="wordListSearch" placeholder="In dieser Liste suchen…" oninput="filterWordList(this.value)" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--card);box-sizing:border-box;">
+  </div>
+  <div class="subscreen-body" id="wordListBody"></div>
+</div>
+
+<!-- Lang Profiles Subscreen -->
+<div class="subscreen" id="langProfilesScreen" style="background:var(--card);">
+  <div class="subscreen-header">
+    <div class="back-btn" onclick="closeSubscreen('langProfilesScreen')">←</div>
+    <div class="subscreen-title">Sprachprofile</div>
+  </div>
+  <div class="subscreen-body" id="langProfilesBody"></div>
+</div>
+
+<!-- Goal Subscreen -->
+<div class="subscreen" id="goalScreen">
+  <div class="subscreen-header">
+    <div class="back-btn" onclick="closeSubscreen('goalScreen')">←</div>
+    <div class="subscreen-title">Lernziel</div>
+  </div>
+  <div class="subscreen-body">
+    <div class="goal-type-selector" onclick="toggleGoalDropdown()">
+      <div class="goal-type-row">
+        <div class="goal-type-left">
+          <div class="goal-type-icon">⭐</div>
+          <div class="goal-type-text" id="goalTypeText">Tagesziel</div>
+        </div>
+        <div class="goal-type-arrow" id="goalTypeArrow">▾</div>
+      </div>
+      <div class="goal-type-options" id="goalTypeOptions">
+        <div class="goal-type-divider"></div>
+        <div class="goal-type-option" onclick="event.stopPropagation();setGoalType('daily')">
+          <div class="goal-type-icon">⭐</div>
+          <div class="goal-type-option-text">Tagesziel</div>
+          <div class="goal-type-option-check" id="checkDaily">✓</div>
+        </div>
+        <div class="goal-type-option" onclick="event.stopPropagation();setGoalType('weekly')">
+          <div class="goal-type-icon">⭐</div>
+          <div class="goal-type-option-text">Wochenziel</div>
+          <div class="goal-type-option-check" id="checkWeekly" style="display:none">✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="goal-amount-wrap">
+      <div class="goal-amount-label">Anzahl Vokabeln</div>
+      <div class="goal-amount-row">
+        <div class="goal-stepper" onclick="adjustGoal(-1)">−</div>
+        <div class="goal-number-wrap">
+          <input class="goal-number-input" type="number" id="goalAmountInput" value="10" min="1" max="999" oninput="updateGoalProgress()">
+          <div class="goal-unit" id="goalUnit">Vokabeln pro Tag</div>
+        </div>
+        <div class="goal-stepper" onclick="adjustGoal(1)">+</div>
+      </div>
+    </div>
+    <div class="goal-progress-wrap">
+      <div class="goal-progress-top"><span>Heute</span><span id="gPLabel" style="color:var(--goal);font-weight:500;">0 / 10</span></div>
+      <div class="goal-progress-bar"><div class="goal-progress-fill" id="gPFill" style="width:0%"></div></div>
+      <div class="goal-progress-nums"><span>0</span><span id="gPMid" style="color:var(--goal);font-weight:500;">0 gelernt</span><span id="gPMax">10</span></div>
+    </div>
+    <div class="reminder-row">
+      <div class="reminder-text">
+        <div class="reminder-title">Erinnerung aktivieren</div>
+        <div class="reminder-sub" id="reminderSubText">Täglich 20:00 Uhr wenn Ziel nicht erreicht</div>
+      </div>
+      <div class="toggle off" id="reminderToggle" onclick="toggleReminder()"><div class="toggle-knob"></div></div>
+    </div>
+    <button class="goal-save-btn" onclick="saveGoal()">Speichern</button>
+  </div>
+</div>
+
+<!-- Unsure Import Screen -->
+<div class="subscreen" id="unsureImportScreen">
+  <div class="subscreen-header">
+    <div class="back-btn" onclick="closeSubscreen('unsureImportScreen')">←</div>
+    <div class="subscreen-title">Import prüfen</div>
+    <span style="margin-left:auto;font-size:11px;background:#FFF0D0;color:#8A7340;padding:4px 12px;border-radius:20px;font-weight:500;font-family:'Inter',sans-serif;" id="unsureCount"></span>
+  </div>
+  <div style="padding:12px 20px;font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);line-height:1.6;" id="unsureInfo"></div>
+  <div class="subscreen-body" id="unsureList" style="padding-top:8px;"></div>
+  <div style="padding:16px 20px;">
+    <button class="save-btn" style="margin:0;" onclick="finishUnsureImport()">Fertig</button>
+  </div>
+</div>
+
+<!-- Edit Unsure Pair Modal -->
+<div class="modal-overlay" id="editUnsureModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('editUnsureModal')">✕</button>
+    <div class="modal-title">Wort bearbeiten</div>
+    <div class="field-label">Lernsprache</div>
+    <input class="field-input" type="text" id="editUnsurePt">
+    <div class="field-label">Muttersprache</div>
+    <input class="field-input" type="text" id="editUnsureDe">
+    <button class="save-btn" onclick="saveEditUnsure()">Speichern & Behalten</button>
+  </div>
+</div>
+
+<!-- Group Picker Modal (when multiple entries with same PT) -->
+<div class="modal-overlay" id="groupPickerModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('groupPickerModal')">✕</button>
+    <div class="modal-title">Bedeutungen</div>
+    <div id="groupPickerBody"></div>
+  </div>
+</div>
+
+<!-- Edit Word Modal (from list) -->
+<div class="modal-overlay" id="editWordModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('editWordModal')">✕</button>
+    <div class="modal-title">Wort bearbeiten</div>
+    <div class="field-label" id="editWordPtLabel">Lernsprache</div>
+    <input class="field-input" type="text" id="editWordPt">
+    <div class="field-label" id="editWordDeLabel">Muttersprache</div>
+    <input class="field-input" type="text" id="editWordDe">
+    <div class="field-label">Wortart</div>
+    <div id="editWordTypeSelect" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="word-type-chip" data-type="" onclick="selectEditWordType(this)">—</div>
+      <div class="word-type-chip" data-type="verb" onclick="selectEditWordType(this)">Verb</div>
+      <div class="word-type-chip" data-type="noun" onclick="selectEditWordType(this)">Nomen</div>
+      <div class="word-type-chip" data-type="adj" onclick="selectEditWordType(this)">Adjektiv</div>
+      <div class="word-type-chip" data-type="adv" onclick="selectEditWordType(this)">Adverb</div>
+      <div class="word-type-chip" data-type="phrase" onclick="selectEditWordType(this)">Phrase</div>
+    </div>
+    <div class="field-label">Liste</div>
+    <div style="font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);padding:10px 14px;background:var(--bg);border-radius:12px;" id="editWordListInfo"></div>
+    <button class="save-btn" onclick="saveEditWord()">Speichern</button>
+    <button onclick="deleteEditWord()" style="width:100%;padding:14px;background:transparent;border:1.5px solid var(--noun);border-radius:16px;color:var(--noun);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;">Wort löschen</button>
+  </div>
+</div>
+
+<!-- Photo Word Select Subscreen -->
+<div class="subscreen" id="photoSelectScreen">
+  <div class="subscreen-header">
+    <div class="back-btn" onclick="closeSubscreen('photoSelectScreen')">←</div>
+    <div class="subscreen-title">Erkannte Wörter</div>
+    <span style="margin-left:auto;font-size:11px;background:var(--neu-bg);color:var(--neu-color);padding:3px 10px;border-radius:20px;font-weight:600;" id="photoWordCount"></span>
+  </div>
+  <div style="padding:8px 20px;font-size:12px;color:var(--muted);line-height:1.5;">Die KI hat einzelne Wörter erkannt. Tippe auf ein Wort um es zu übersetzen.</div>
+  <div class="subscreen-body" id="photoWordList" style="padding-top:8px;"></div>
+  <div style="padding:16px 20px;"><button class="save-btn" id="photoSaveBtn" onclick="savePhotoWords()" style="margin-top:0;">Ausgewählte speichern</button></div>
+</div>
+
+<!-- Goal Achieved -->
+<div class="goal-achieved-screen" id="goalAchievedScreen">
+  <div class="goal-sparkle" style="top:12%;left:18%;width:11px;height:11px;"></div>
+  <div class="goal-sparkle" style="top:18%;right:22%;width:7px;height:7px;"></div>
+  <div class="goal-sparkle" style="top:30%;left:8%;width:9px;height:9px;"></div>
+  <div class="goal-sparkle" style="top:65%;right:12%;width:12px;height:12px;"></div>
+  <div class="goal-sparkle" style="top:72%;left:20%;width:7px;height:7px;"></div>
+  <div class="goal-sparkle" style="top:8%;right:8%;width:14px;height:14px;"></div>
+  <div class="goal-sparkle" style="bottom:20%;left:12%;width:9px;height:9px;"></div>
+  <div class="goal-sparkle" style="bottom:28%;right:18%;width:7px;height:7px;"></div>
+  <div class="goal-star">⭐</div>
+  <div class="goal-achieved-title">Ziel erreicht!</div>
+  <div class="goal-achieved-sub" id="goalAchievedSub">Du hast heute 10 Vokabeln gelernt</div>
+  <div class="goal-achieved-extra">Weiter so! 🎉</div>
+</div>
+
+<!-- Processing -->
+<div class="processing-overlay" id="processingOverlay">
+  <div class="processing-box">
+    <div class="processing-spinner"></div>
+    <div class="processing-title" id="processingTitle">KI verarbeitet…</div>
+    <div class="processing-text" id="processingText">Einen Moment bitte</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://uegsajxcmsmmasusjunq.supabase.co';
+const SUPA_KEY='sb_publishable_JxKwRpM4QsX9bEV0Gtn0Wg_H8OV7NsD';
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+const LANGS=[
+  {code:'de',name:'Deutsch',native:'Deutsch',flag:'🇩🇪'},
+  {code:'pt',name:'Portugiesisch',native:'Português',flag:'🇵🇹'},
+  {code:'en',name:'Englisch',native:'English',flag:'🇬🇧'},
+  {code:'es',name:'Spanisch',native:'Español',flag:'🇪🇸'},
+  {code:'fr',name:'Französisch',native:'Français',flag:'🇫🇷'},
+  {code:'it',name:'Italienisch',native:'Italiano',flag:'🇮🇹'},
+  {code:'nl',name:'Niederländisch',native:'Nederlands',flag:'🇳🇱'},
+  {code:'pl',name:'Polnisch',native:'Polski',flag:'🇵🇱'},
+  {code:'tr',name:'Türkisch',native:'Türkçe',flag:'🇹🇷'},
+  {code:'ru',name:'Russisch',native:'Русский',flag:'🇷🇺'},
+  {code:'ja',name:'Japanisch',native:'日本語',flag:'🇯🇵'},
+  {code:'zh',name:'Chinesisch',native:'中文',flag:'🇨🇳'},
+  {code:'ar',name:'Arabisch',native:'العربية',flag:'🇸🇦'},
+  {code:'ko',name:'Koreanisch',native:'한국어',flag:'🇰🇷'},
+  {code:'sv',name:'Schwedisch',native:'Svenska',flag:'🇸🇪'},
+  {code:'no',name:'Norwegisch',native:'Norsk',flag:'🇳🇴'},
+  {code:'da',name:'Dänisch',native:'Dansk',flag:'🇩🇰'},
+  {code:'fi',name:'Finnisch',native:'Suomi',flag:'🇫🇮'},
+  {code:'hr',name:'Kroatisch',native:'Hrvatski',flag:'🇭🇷'},
+  {code:'el',name:'Griechisch',native:'Ελληνικά',flag:'🇬🇷'},
+];
+const TC={verb:'var(--accent)',noun:'var(--noun)',phrase:'var(--phrase)',adj:'var(--adj)',adv:'var(--adj)',other:'var(--muted)'};
+const TL={verb:'Verb',noun:'Nomen',phrase:'Phrase',adj:'Adjektiv',adv:'Adverb',other:'Andere'};
+const TCL={verb:'type-verb',noun:'type-noun',phrase:'type-phrase',adj:'type-adj',adv:'type-adj',other:''};
+function GL(code){return LANGS.find(l=>l.code===code)||{code,name:code,flag:'🏳️'};}
+
+let userId=null,currentProfile=null,words=[],currentWord=null,currentDir=null,revealed=false;
+let pendingSuggestions=[],aiDebounceTimer=null,goalData=null,todayCount=0,weekCount=0,goalAchievedShown=false;
+let photoRecognized=[],photoTranslating={},selectedNativeLang=null,selectedLearnLang=null;
+
+// Index for O(1) word lookup by ID. Updated whenever words array changes.
+let wordsById=new Map();
+function rebuildWordsIndex(){
+  wordsById.clear();
+  for(const w of words)wordsById.set(w.id,w);
+}
+function findWord(id){return wordsById.get(id);}
+
+// Escape HTML to prevent XSS attacks
+function escapeHtml(s){
+  if(s===null||s===undefined)return '';
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function init(){
+  // Check Supabase session FIRST
+  const {data:{session}}=await supa.auth.getSession();
+  
+  // Load API key only if it belongs to current user
+  const savedKey=localStorage.getItem('vl_api_key');
+  const savedKeyUser=localStorage.getItem('vl_api_key_user');
+  if(savedKey&&session&&savedKeyUser===session.user.id){
+    document.getElementById('apiKeyInput').value=savedKey;
+    document.getElementById('onboardApiKey').value=savedKey;
+  }else if(savedKey&&!session){
+    // No session - clear leftover key for safety
+    localStorage.removeItem('vl_api_key');
+    localStorage.removeItem('vl_api_key_user');
+  }
+  
+  if(!session){
+    // Not logged in -> show login screen
+    showScreen('loginScreen');
+    return;
+  }
+  
+  userId=session.user.id;
+  
+  // Listen for auth changes
+  supa.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_OUT'){location.reload();}
+  });
+  
+  try{
+    // Ensure user record exists in vl_users
+    const{data:userRecord}=await supa.from('vl_users').select('id').eq('id',userId).single();
+    if(!userRecord){
+      await supa.from('vl_users').insert({id:userId,device_id:session.user.email||userId});
+    }
+    
+    // Load profiles
+    const{data:profiles}=await supa.from('vl_profiles').select('*').eq('user_id',userId);
+    if(!profiles||!profiles.length){
+      // No profiles yet -> onboarding for languages
+      buildLangGrids();showScreen('onboard1Screen');return;
+    }
+    
+    const savedPId=localStorage.getItem('vl_pid');
+    currentProfile=profiles.find(p=>p.id===savedPId)||profiles[0];
+    localStorage.setItem('vl_pid',currentProfile.id);
+    await loadWords();await loadTodayProgress();await loadGoal();
+    updateMenuUI();showNextWord();showScreen('mainScreen');
+  }catch(e){
+    console.error('Init error:',e);
+    // Network/DB error: show retry screen, don't dump user into onboarding
+    showScreen('errorScreen');
+  }
+}
+
+async function sendMagicLink(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const btn=document.getElementById('loginBtn');
+  const msg=document.getElementById('loginMessage');
+  if(!email||!email.includes('@')){
+    msg.style.display='block';
+    msg.style.background='var(--noun-light)';
+    msg.style.color='var(--noun-text)';
+    msg.textContent='Bitte gib eine gültige E-Mail-Adresse ein';
+    return;
+  }
+  btn.disabled=true;
+  btn.textContent='Wird gesendet…';
+  msg.style.display='none';
+  try{
+    const{error}=await supa.auth.signInWithOtp({
+      email,
+      options:{emailRedirectTo:window.location.origin+window.location.pathname}
+    });
+    if(error)throw error;
+    document.getElementById('sentToEmail').textContent=email;
+    showScreen('loginSentScreen');
+  }catch(e){
+    msg.style.display='block';
+    msg.style.background='var(--noun-light)';
+    msg.style.color='var(--noun-text)';
+    msg.textContent='Fehler: '+e.message;
+    btn.disabled=false;
+    btn.textContent='Login-Link senden';
+  }
+}
+
+async function logout(){
+  await supa.auth.signOut();
+  localStorage.removeItem('vl_pid');
+  localStorage.removeItem('vl_api_key');
+  localStorage.removeItem('vl_api_key_user');
+  location.reload();
+}
+
+function buildLangGrids(){
+  const sys=navigator.language.split('-')[0];
+  const defNative=LANGS.find(l=>l.code===sys)||LANGS[0];
+  selectedNativeLang=defNative.code;
+  selectedLearnLang=LANGS.find(l=>l.code!==selectedNativeLang)?.code||'pt';
+  const show=LANGS.slice(0,5);
+  ['nativeLangGrid','learnLangGrid'].forEach((gridId,isLearn)=>{
+    const grid=document.getElementById(gridId);
+    grid.innerHTML='';
+    const langs=isLearn?show.filter(l=>l.code!==selectedNativeLang):show;
+    langs.forEach(lang=>{
+      const selected=isLearn?(lang.code===selectedLearnLang):(lang.code===selectedNativeLang);
+      const el=document.createElement('div');
+      el.className='lang-option'+(selected?' selected':'');
+      el.innerHTML=`<span class="lang-flag">${lang.flag}</span><div><div class="lang-name">${escapeHtml(lang.name)}</div><div class="lang-native">${escapeHtml(lang.native)}</div></div>`;
+      el.onclick=()=>{
+        grid.querySelectorAll('.lang-option').forEach(e=>e.classList.remove('selected'));
+        el.classList.add('selected');
+        if(isLearn)selectedLearnLang=lang.code;else selectedNativeLang=lang.code;
+      };
+      grid.appendChild(el);
+    });
+    const add=document.createElement('div');add.className='lang-option-add';
+    add.innerHTML=`<span style="font-size:22px;color:var(--muted);line-height:1;flex-shrink:0;">＋</span><span style="font-size:13px;font-weight:500;color:var(--muted);">Weitere Sprache</span>`;
+    add.onclick=()=>{const c=prompt('Sprachcode (z.B. ja, ru, ko):\n'+LANGS.slice(5).map(l=>l.code+'='+l.name).join('\n'));if(c&&LANGS.find(l=>l.code===c)){if(isLearn)selectedLearnLang=c;else selectedNativeLang=c;buildLangGrids();}};
+    grid.appendChild(add);
+  });
+}
+
+function goToOnboard2(){showScreen('onboard2Screen');}
+function goToOnboard3(){showScreen('onboard3Screen');}
+
+async function finishOnboarding(){
+  const apiKey=document.getElementById('onboardApiKey').value.trim();
+  if(apiKey){
+    // Validate API key
+    showProcessing('API Key wird geprüft…','Einen Moment bitte');
+    const valid=await validateApiKey(apiKey);
+    if(!valid){
+      hideProcessing();
+      showToast('API Key ungültig – bitte prüfen','wrong');
+      return;
+    }
+    localStorage.setItem('vl_api_key',apiKey);
+    if(userId)localStorage.setItem('vl_api_key_user',userId);
+  }
+  showProcessing('Wird eingerichtet…','Einen Moment bitte');
+  try{
+    // Ensure user record
+    const{data:ex}=await supa.from('vl_users').select('id').eq('id',userId).single();
+    if(!ex){
+      const{data:{session}}=await supa.auth.getSession();
+      await supa.from('vl_users').insert({id:userId,device_id:session?.user?.email||userId});
+    }
+    const{data:profile}=await supa.from('vl_profiles').insert({user_id:userId,native_lang:selectedNativeLang||'de',learn_lang:selectedLearnLang||'pt'}).select().single();
+    if(profile){currentProfile=profile;localStorage.setItem('vl_pid',profile.id);}
+    hideProcessing();updateMenuUI();showNextWord();showScreen('mainScreen');
+  }catch(e){hideProcessing();showToast('Fehler: '+e.message);console.error(e);}
+}
+
+async function validateApiKey(key){
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'hi'}]})
+    });
+    return res.ok;
+  }catch(e){return false;}
+}
+
+// Group suggestions by similar meaning. Returns array of arrays.
+// Similar meanings -> one group (becomes one entry with comma-separated translations)
+// Different meanings -> separate groups (become separate entries)
+async function groupSuggestionsByMeaning(suggestions){
+  const apiKey=localStorage.getItem('vl_api_key');
+  if(!apiKey||suggestions.length<=1)return suggestions.map(s=>[s]);
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  try{
+    const list=suggestions.map((s,i)=>`${i}: ${learn.name} "${s.learn}" / ${native.name} "${s.native}"`).join('\n');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:500,
+        messages:[{role:'user',content:`Du bekommst mehrere Übersetzungen. Entscheide ob sie zur SELBEN Bedeutung gehören (Synonyme, gleiches Konzept) oder zu VERSCHIEDENEN Bedeutungen (Homonyme, unterschiedliche Konzepte).\n\n${list}\n\nWICHTIG: Im Zweifel IMMER getrennte Gruppen wählen! Lieber zu separat als zu kombiniert.\n\nBeispiele für SELBE Bedeutung (1 Gruppe):\n- "mögen" und "gernhaben" (Synonyme)\n- "lecker" und "schmackhaft" (Synonyme)\n\nBeispiele für VERSCHIEDENE Bedeutungen (separate Gruppen):\n- "por=für" und "por=durch" → 2 Gruppen (verschiedene Präpositionen)\n- "giro=Überweisung" und "giro=cool" → 2 Gruppen (Hauptwort vs. Adjektiv)\n- "banco=Bank (Geld)" und "banco=Bank (Sitzbank)" → 2 Gruppen\n- "manga=Ärmel" und "manga=Mango" → 2 Gruppen\n\nAntworte NUR mit JSON-Array von Arrays mit Indizes, z.B. [[0],[1]] für 2 separate oder [[0,1]] für gemeinsam. Keine Erklärung.`}]
+      })
+    });
+    if(!res.ok)return suggestions.map(s=>[s]);
+    const data=await res.json();
+    let text=data.content?.[0]?.text||'';
+    text=text.replace(/```json|```/g,'').trim();
+    const m=text.match(/\[[\s\S]*\]/);
+    if(m)text=m[0];
+    const groupIndices=JSON.parse(text);
+    if(!Array.isArray(groupIndices))return suggestions.map(s=>[s]);
+    return groupIndices.map(group=>group.map(i=>suggestions[i]).filter(Boolean)).filter(g=>g.length>0);
+  }catch(e){
+    console.error('groupSuggestionsByMeaning error',e);
+    return suggestions.map(s=>[s]);
+  }
+}
+
+// Validates a translation pair using KI.
+// Returns: {status:'correct'} | {status:'corrected', correctedDe, correctedPt} | {status:'unsure'} | {status:'error'}
+async function validateTranslation(pt,de){
+  const apiKey=localStorage.getItem('vl_api_key');
+  if(!apiKey)return{status:'error'};
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:200,
+        messages:[{role:'user',content:`Prüfe diese Übersetzung zwischen ${learn.name} und ${native.name}:\n${learn.name}: "${pt}"\n${native.name}: "${de}"\n\nWICHTIG: Eigennamen (Länder, Städte, Marken) und Standard-Vokabular sind KORREKT, nicht unsicher.\n\nAntworte NUR mit einem JSON-Objekt, ohne Markdown:\n- Wenn die Übersetzung korrekt ist (auch Eigennamen wie "Brasil"="Brasilien"): {"status":"correct"}\n- Wenn falsch und du eine bessere Übersetzung kennst: {"status":"corrected","correctedPt":"...","correctedDe":"..."}\n- NUR bei seltener Umgangssprache/Slang: {"status":"unsure"}\n\nNur das JSON, keine Erklärung.`}]
+      })
+    });
+    if(!res.ok)return{status:'error'};
+    const data=await res.json();
+    let text=data.content?.[0]?.text||'';
+    text=text.replace(/```json|```/g,'').trim();
+    const m=text.match(/\{[\s\S]*\}/);
+    if(m)text=m[0];
+    const result=JSON.parse(text);
+    return result;
+  }catch(e){console.error('validateTranslation error',e);return{status:'error'};}
+}
+
+async function loadWords(){
+  if(!currentProfile)return;
+  const{data}=await supa.from('vl_words').select('*').eq('profile_id',currentProfile.id).order('created_at');
+  words=data||[];
+  rebuildWordsIndex();
+}
+
+async function saveWordDB(word){
+  if(!word.id)return;
+  const payload={list:word.list,de_right:word.de_right,pt_right:word.pt_right};
+  try{
+    const{error}=await supa.from('vl_words').update(payload).eq('id',word.id);
+    if(error)throw error;
+  }catch(e){
+    // Queue write for later if offline or DB error
+    queuePendingWrite({type:'update_word',id:word.id,payload});
+    console.warn('saveWordDB queued (offline?):',e);
+  }
+}
+
+let priorityQueue=[];
+let recentlyShown=[]; // IDs of last shown words to avoid quick repetition
+const RECENT_HISTORY_SIZE=5; // Don't repeat among last 5
+
+function pickNextWord(){
+  // First check priority queue (newly added words)
+  while(priorityQueue.length>0){
+    const id=priorityQueue.shift();
+    const w=findWord(id);
+    if(w&&(w.list==='neu'||w.list==='ueben')&&(!currentWord||currentWord.id!==w.id))return w;
+  }
+  const active=words.filter(w=>w.list==='neu'||w.list==='ueben');
+  const beh=words.filter(w=>w.list==='beherrscht');
+  let pool=[];
+  if(active.length>0&&(beh.length===0||Math.random()<0.95))pool=active;
+  else if(beh.length>0)pool=beh;
+  else return null;
+  // Filter out recently shown words if pool is big enough
+  if(pool.length>RECENT_HISTORY_SIZE+1){
+    const filtered=pool.filter(w=>!recentlyShown.includes(w.id));
+    if(filtered.length>0)pool=filtered;
+  }else if(pool.length>1&&currentWord){
+    // Small pool: just avoid repeating the last word
+    pool=pool.filter(w=>w.id!==currentWord.id);
+  }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function trackShownWord(id){
+  recentlyShown.push(id);
+  if(recentlyShown.length>RECENT_HISTORY_SIZE)recentlyShown.shift();
+}
+
+function pickDir(word){
+  const nDe=word.de_right<3,nPt=word.pt_right<3;
+  // If only one direction still needs practice, use that
+  if(nDe&&!nPt)return 'de_to_learn';
+  if(nPt&&!nDe)return 'learn_to_de';
+  // Both need practice: alternate directions, avoid repeating same direction 3x in a row
+  if(!nDe&&!nPt)return Math.random()<0.5?'de_to_learn':'learn_to_de';
+  // Both incomplete: prefer the direction with fewer correct answers
+  if(word.de_right<word.pt_right)return 'de_to_learn';
+  if(word.pt_right<word.de_right)return 'learn_to_de';
+  // Equal: alternate based on last direction shown
+  return currentDir==='de_to_learn'?'learn_to_de':'de_to_learn';
+}
+
+function showNextWord(){
+  revealed=false;
+  const word=pickNextWord();
+  if(!word){showEmptyState();return;}
+  currentWord=word;currentDir=pickDir(word);
+  trackShownWord(word.id);
+  document.getElementById('emptyState').classList.remove('visible');
+  document.getElementById('wordArea').style.display='flex';
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  document.getElementById('mainWord').textContent=currentDir==='de_to_learn'?word.de:word.pt;
+  const badge=document.getElementById('typeBadge');
+  if(word.type&&word.type!=='other'&&word.type!==''){badge.textContent=TL[word.type]||word.type;badge.className='word-type-badge '+(TCL[word.type]||'');badge.style.display='';}
+  else badge.style.display='none';
+  document.getElementById('cardTopBar').style.background=TC[word.type]||'var(--accent)';
+  // Speaker button: show on TOP only if foreign language is displayed there (learn_to_de means we show foreign word on top)
+  const foreignOnTop=currentDir==='learn_to_de';
+  document.getElementById('speakerBtn').style.display=foreignOnTop?'flex':'none';
+  document.getElementById('speakerBtnTrans').style.display='none';
+  document.getElementById('translationWrap').classList.remove('visible');
+  document.getElementById('wordProgress').classList.remove('visible');
+  document.getElementById('feedbackRow').classList.remove('visible');
+  document.getElementById('masteredBtn').classList.remove('visible');
+  document.getElementById('wordCard').style.borderColor='';
+  document.getElementById('wordCard').style.background='';
+  document.getElementById('wordCard').style.cursor='pointer';
+  document.getElementById('f1a').textContent=native.flag;
+  document.getElementById('f1b').textContent=learn.flag;
+  document.getElementById('f2a').textContent=learn.flag;
+  document.getElementById('f2b').textContent=native.flag;
+}
+
+function revealWord(){
+  if(revealed||!currentWord)return;
+  revealed=true;
+  const word=currentWord;
+  const trans=currentDir==='de_to_learn'?word.pt:word.de;
+  // Translation: just the word, no badge
+  document.getElementById('translationContent').innerHTML=`<div class="translation-main">${escapeHtml(trans)}</div>`;
+  // Badge on top stays visible (no change needed)
+  document.getElementById('translationWrap').classList.add('visible');
+  // Speaker logic on reveal:
+  // - If foreign word is on TOP (learn_to_de): keep speaker on top, hide bottom
+  // - If foreign word is on BOTTOM (de_to_learn): hide top, show bottom
+  if(currentDir==='de_to_learn'){
+    // Foreign word now visible at bottom (translation)
+    document.getElementById('speakerBtn').style.display='none';
+    document.getElementById('speakerBtnTrans').style.display='flex';
+  } else {
+    // Foreign word still on top, keep it there
+    document.getElementById('speakerBtn').style.display='flex';
+    document.getElementById('speakerBtnTrans').style.display='none';
+  }
+  document.getElementById('dots1').innerHTML=[0,1,2].map(i=>`<div class="wp-dot${i<word.de_right?' done':''}"></div>`).join('');
+  document.getElementById('dots2').innerHTML=[0,1,2].map(i=>`<div class="wp-dot${i<word.pt_right?' done':''}"></div>`).join('');
+  document.getElementById('wordProgress').classList.add('visible');
+  document.getElementById('feedbackRow').classList.add('visible');
+  if(word.imported&&word.de_right===0&&word.pt_right===0)document.getElementById('masteredBtn').classList.add('visible');
+  document.getElementById('wordCard').style.cursor='default';
+}
+
+// Lock to prevent race conditions on rapid feedback clicks
+let feedbackInProgress=false;
+
+async function handleFeedback(correct){
+  if(!currentWord||feedbackInProgress)return;
+  const word=findWord(currentWord.id);if(!word)return;
+  feedbackInProgress=true;
+  try{
+    if(correct){
+      if(currentDir==='de_to_learn')word.de_right=Math.min(3,word.de_right+1);
+      else word.pt_right=Math.min(3,word.pt_right+1);
+      if(word.de_right>=3&&word.pt_right>=3){word.list='beherrscht';}
+      else if(word.list==='neu')word.list='ueben';
+      await trackProgress();checkGoalAchieved();
+    }else{
+      if(word.list==='beherrscht'){word.list='neu';word.de_right=0;word.pt_right=0;}
+      else{word.de_right=0;word.pt_right=0;}
+    }
+    await saveWordDB(word);updateMenuUI();
+    document.getElementById('wordCard').style.borderColor=correct?'var(--accent)':'var(--noun)';
+    document.getElementById('wordCard').style.background=correct?'#F0FAF5':'#FDF0F4';
+  }catch(e){
+    console.error('handleFeedback error',e);
+    showToast('Speichern fehlgeschlagen','wrong');
+  }finally{
+    setTimeout(()=>{feedbackInProgress=false;showNextWord();},650);
+  }
+}
+
+async function handleMastered(){
+  if(!currentWord||feedbackInProgress)return;
+  const word=findWord(currentWord.id);if(!word)return;
+  feedbackInProgress=true;
+  try{
+    word.list='beherrscht';word.de_right=3;word.pt_right=3;
+    await saveWordDB(word);updateMenuUI();
+  }catch(e){
+    console.error('handleMastered error',e);
+    showToast('Speichern fehlgeschlagen','wrong');
+  }finally{
+    setTimeout(()=>{feedbackInProgress=false;showNextWord();},650);
+  }
+}
+
+function showEmptyState(){
+  document.getElementById('wordArea').style.display='none';
+  document.getElementById('emptyState').classList.add('visible');
+}
+
+function speakWord(text,langCode){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=langCode;
+  window.speechSynthesis.speak(u);
+}
+
+function speakCurrentWord(){
+  if(!currentWord)return;
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  // Always speak the foreign language word
+  const text=learn.code==='pt'?currentWord.pt:(currentDir==='learn_to_de'?currentWord.pt:currentWord.pt);
+  // Find foreign word: pt field is always the learn language
+  const foreignWord=currentWord.pt;
+  speakWord(foreignWord,learn.code);
+  const btn=document.getElementById('speakerBtn');
+  btn.classList.add('speaking');
+  setTimeout(()=>btn.classList.remove('speaking'),1500);
+}
+
+// Queue ensures trackProgress calls run sequentially, preventing race conditions
+let trackProgressQueue=Promise.resolve();
+async function trackProgress(){
+  // Chain into existing queue
+  trackProgressQueue=trackProgressQueue.then(async()=>{
+    if(!currentProfile)return;
+    const today=new Date().toISOString().split('T')[0];
+    const{data:ex}=await supa.from('vl_progress').select('*').eq('user_id',userId).eq('profile_id',currentProfile.id).eq('date',today).single();
+    if(ex){
+      const newCount=ex.count+1;
+      await supa.from('vl_progress').update({count:newCount}).eq('id',ex.id);
+      todayCount=newCount;
+    }else{
+      await supa.from('vl_progress').insert({user_id:userId,profile_id:currentProfile.id,date:today,count:1});
+      todayCount=1;
+    }
+    // Recalculate weekCount from DB to avoid drift
+    const now=new Date();
+    const day=now.getDay();
+    const diff=day===0?-6:1-day;
+    const monday=new Date(now);
+    monday.setDate(now.getDate()+diff);
+    monday.setHours(0,0,0,0);
+    const mondayStr=monday.toISOString().split('T')[0];
+    const{data:weekData}=await supa.from('vl_progress').select('count').eq('user_id',userId).eq('profile_id',currentProfile.id).gte('date',mondayStr);
+    weekCount=(weekData||[]).reduce((sum,r)=>sum+(r.count||0),0);
+    updateMenuGoalUI();
+  }).catch(e=>{console.error('trackProgress error',e);});
+  return trackProgressQueue;
+}
+
+async function loadTodayProgress(){
+  if(!currentProfile)return;
+  const today=new Date().toISOString().split('T')[0];
+  const{data}=await supa.from('vl_progress').select('count').eq('user_id',userId).eq('profile_id',currentProfile.id).eq('date',today).single();
+  todayCount=data?.count||0;
+  // Calculate Monday of current week
+  const now=new Date();
+  const day=now.getDay(); // 0=Sunday, 1=Monday
+  const diff=day===0?-6:1-day; // shift to Monday
+  const monday=new Date(now);
+  monday.setDate(now.getDate()+diff);
+  monday.setHours(0,0,0,0);
+  const mondayStr=monday.toISOString().split('T')[0];
+  const{data:weekData}=await supa.from('vl_progress').select('count').eq('user_id',userId).eq('profile_id',currentProfile.id).gte('date',mondayStr);
+  weekCount=(weekData||[]).reduce((sum,r)=>sum+(r.count||0),0);
+}
+
+async function loadGoal(){
+  if(!currentProfile)return;
+  const{data}=await supa.from('vl_goals').select('*').eq('user_id',userId).eq('profile_id',currentProfile.id).single();
+  goalData=data;updateMenuGoalUI();
+}
+
+function updateMenuGoalUI(){
+  const sub=document.getElementById('mGoal');
+  if(!goalData||!goalData.goal_amount){sub.innerHTML='Nicht gesetzt';return;}
+  const current=goalData.goal_type==='weekly'?weekCount:todayCount;
+  const goal=goalData.goal_amount;
+  // Bold when over goal
+  if(current>=goal){
+    sub.innerHTML=`<strong style="font-weight:700;">${current}</strong> / ${goal}`;
+  }else{
+    sub.innerHTML=`${current} / ${goal}`;
+  }
+}
+
+function checkGoalAchieved(){
+  if(!goalData||goalAchievedShown)return;
+  const isDaily=goalData.goal_type==='daily';
+  const current=isDaily?todayCount:weekCount;
+  if(current>=goalData.goal_amount){
+    goalAchievedShown=true;
+    const period=isDaily?'heute':'diese Woche';
+    document.getElementById('goalAchievedSub').textContent=`Du hast ${period} ${current} Vokabeln gelernt`;
+    const screen=document.getElementById('goalAchievedScreen');
+    screen.classList.add('show');
+    setTimeout(()=>screen.classList.remove('show'),4000);
+  }
+}
+
+function openMenu(){updateMenuUI();document.getElementById('sideMenu').classList.add('open');document.getElementById('menuOverlay').classList.add('open');}
+function closeMenu(){document.getElementById('sideMenu').classList.remove('open');document.getElementById('menuOverlay').classList.remove('open');document.getElementById('searchInput').value='';document.getElementById('searchResults').innerHTML='';}
+
+function updateMenuUI(){
+  const neu=words.filter(w=>w.list==='neu').length;
+  const ueben=words.filter(w=>w.list==='ueben').length;
+  const beh=words.filter(w=>w.list==='beherrscht').length;
+  document.getElementById('mNeu').textContent=neu+' Wörter';
+  document.getElementById('mUeben').textContent=ueben+' Wörter';
+  document.getElementById('mBeh').textContent=beh+' Wörter';
+  document.getElementById('bNeu').textContent=neu;
+  document.getElementById('bUeben').textContent=ueben;
+  document.getElementById('bBeh').textContent=beh;
+  if(currentProfile){
+    document.getElementById('sf1').textContent=GL(currentProfile.native_lang).flag;
+    document.getElementById('sf2').textContent=GL(currentProfile.learn_lang).flag;
+  }
+  updateMenuGoalUI();
+}
+
+function handleSearch(val){
+  const container=document.getElementById('searchResults');
+  if(!val.trim()){container.innerHTML='';return;}
+  const q=val.toLowerCase();
+  const matches=words.filter(w=>w.pt.toLowerCase().includes(q)||w.de.toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){container.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">Kein Wort gefunden</div>';return;}
+  container.innerHTML=matches.map(w=>`<div class="sr-item"><span class="sr-pt">${escapeHtml(w.pt)}</span><span class="sr-de" style="margin-left:auto;">→ ${escapeHtml(w.de)}</span></div>`).join('');
+}
+
+let currentListType=null;
+let currentListGroups=[];
+let currentListVisibleCount=0;
+const LIST_PAGE_SIZE=100;
+
+function openWordList(key){
+  closeMenu();
+  currentListType=key;
+  const filtered=words.filter(w=>w.list===key);
+  const labels={neu:'Neu',ueben:'Üben',beherrscht:'Beherrscht'};
+  document.getElementById('wordListTitle').textContent=labels[key];
+  document.getElementById('wordListCount').textContent=filtered.length+' Wörter';
+  // Show search bar only if list is large enough to benefit from it
+  document.getElementById('wordListSearchBar').style.display=filtered.length>20?'block':'none';
+  document.getElementById('wordListSearch').value='';
+  // Sort alphabetically by PT (learn language)
+  const sorted=[...filtered].sort((a,b)=>a.pt.toLowerCase().localeCompare(b.pt.toLowerCase()));
+  // Group entries with same PT (case-insensitive) - they share a card visually
+  const groups=[];
+  const seenPt=new Map();
+  for(const w of sorted){
+    const k=w.pt.toLowerCase().trim();
+    if(seenPt.has(k)){
+      groups[seenPt.get(k)].entries.push(w);
+    }else{
+      seenPt.set(k,groups.length);
+      groups.push({pt:w.pt,entries:[w]});
+    }
+  }
+  currentListGroups=groups;
+  currentListVisibleCount=Math.min(LIST_PAGE_SIZE,groups.length);
+  renderWordListPage();
+  openSubscreen('wordListScreen');
+}
+
+// Render visible portion of currentListGroups
+function renderWordListPage(){
+  const body=document.getElementById('wordListBody');
+  if(currentListGroups.length===0){
+    body.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">Keine Wörter in dieser Liste</div>';
+    return;
+  }
+  const visible=currentListGroups.slice(0,currentListVisibleCount);
+  let html=visible.map(g=>{
+    if(g.entries.length===1){
+      const w=g.entries[0];
+      return `<div class="list-item" onclick="openEditWord('${escapeHtml(w.id)}')" style="cursor:pointer;"><div class="li-bar" style="background:${TC[w.type]||'var(--muted)'}"></div><div style="flex:1"><div class="li-pt">${escapeHtml(w.pt)}</div><div class="li-de">${escapeHtml(w.de)}</div></div></div>`;
+    }
+    const allDes=g.entries.map(e=>escapeHtml(e.de)).join(' / ');
+    const firstType=g.entries[0].type;
+    return `<div class="list-item list-item-group" style="cursor:pointer;" onclick="openGroupedWords(${JSON.stringify(g.entries.map(e=>e.id)).replace(/"/g,'&quot;')})"><div class="li-bar" style="background:${TC[firstType]||'var(--muted)'}"></div><div style="flex:1"><div class="li-pt">${escapeHtml(g.pt)} <span style="font-size:11px;font-family:'Inter',sans-serif;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px;">${g.entries.length} Bedeutungen</span></div><div class="li-de">${allDes}</div></div></div>`;
+  }).join('');
+  // Add "Show more" button if there are more groups
+  if(currentListVisibleCount<currentListGroups.length){
+    const remaining=currentListGroups.length-currentListVisibleCount;
+    html+=`<div style="padding:16px 20px;"><button onclick="loadMoreWordList()" style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;">Weitere ${Math.min(LIST_PAGE_SIZE,remaining)} anzeigen (${remaining} übrig)</button></div>`;
+  }
+  body.innerHTML=html;
+}
+
+function loadMoreWordList(){
+  currentListVisibleCount=Math.min(currentListVisibleCount+LIST_PAGE_SIZE,currentListGroups.length);
+  renderWordListPage();
+}
+
+// Filter list by search query
+function filterWordList(query){
+  const q=query.trim().toLowerCase();
+  if(!q){
+    // Reset to original groups (rebuild from current list type)
+    const filtered=words.filter(w=>w.list===currentListType);
+    const sorted=[...filtered].sort((a,b)=>a.pt.toLowerCase().localeCompare(b.pt.toLowerCase()));
+    const groups=[];const seenPt=new Map();
+    for(const w of sorted){
+      const k=w.pt.toLowerCase().trim();
+      if(seenPt.has(k))groups[seenPt.get(k)].entries.push(w);
+      else{seenPt.set(k,groups.length);groups.push({pt:w.pt,entries:[w]});}
+    }
+    currentListGroups=groups;
+  }else{
+    const filtered=words.filter(w=>w.list===currentListType&&(w.pt.toLowerCase().includes(q)||w.de.toLowerCase().includes(q)));
+    const sorted=[...filtered].sort((a,b)=>a.pt.toLowerCase().localeCompare(b.pt.toLowerCase()));
+    const groups=[];const seenPt=new Map();
+    for(const w of sorted){
+      const k=w.pt.toLowerCase().trim();
+      if(seenPt.has(k))groups[seenPt.get(k)].entries.push(w);
+      else{seenPt.set(k,groups.length);groups.push({pt:w.pt,entries:[w]});}
+    }
+    currentListGroups=groups;
+  }
+  currentListVisibleCount=Math.min(LIST_PAGE_SIZE,currentListGroups.length);
+  renderWordListPage();
+}
+
+// Open a small picker to choose which entry to edit
+function openGroupedWords(idsJson){
+  const ids=typeof idsJson==='string'?JSON.parse(idsJson.replace(/&quot;/g,'"')):idsJson;
+  const entries=ids.map(id=>findWord(id)).filter(Boolean);
+  if(!entries.length)return;
+  // Show selection in a simple modal-like overlay
+  const html=`<div style="padding:8px 0;"><div style="font-family:'Inter',sans-serif;font-size:12px;color:var(--muted);margin-bottom:10px;">Welche Bedeutung bearbeiten?</div>${entries.map(w=>`<div class="list-item" onclick="closeModal('groupPickerModal');setTimeout(()=>openEditWord('${escapeHtml(w.id)}'),200);" style="margin-bottom:8px;cursor:pointer;"><div class="li-bar" style="background:${TC[w.type]||'var(--muted)'}"></div><div style="flex:1"><div class="li-pt">${escapeHtml(w.pt)}</div><div class="li-de">${escapeHtml(w.de)}</div></div></div>`).join('')}</div>`;
+  document.getElementById('groupPickerBody').innerHTML=html;
+  document.getElementById('groupPickerModal').classList.add('open');
+}
+
+async function openLangProfiles(){
+  closeMenu();
+  const{data:profiles}=await supa.from('vl_profiles').select('*').eq('user_id',userId);
+  const body=document.getElementById('langProfilesBody');
+  body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Lädt…</div>';
+  openSubscreen('langProfilesScreen');
+  const counts={};
+  for(const p of profiles||[]){
+    const{count}=await supa.from('vl_words').select('*',{count:'exact',head:true}).eq('profile_id',p.id);
+    counts[p.id]=count||0;
+  }
+  body.innerHTML=(profiles||[]).map(p=>{
+    const native=GL(p.native_lang);const learn=GL(p.learn_lang);
+    const isActive=currentProfile?.id===p.id;
+    const arrowColor=isActive?'#2D6A4F':'var(--muted)';
+    return `<div class="lang-profile${isActive?' active':''}" onclick="switchProfile('${escapeHtml(p.id)}')">
+      <div class="lp-left">
+        <div class="lp-flags"><span class="lp-flag">${native.flag}</span>
+        <svg width="22" height="12" viewBox="0 0 28 14" fill="none"><path d="M2 7H26" stroke="${arrowColor}" stroke-width="2.5" stroke-linecap="round"/><path d="M20 2L26 7L20 12" stroke="${arrowColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 2L2 7L8 12" stroke="${arrowColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="lp-flag">${learn.flag}</span></div>
+        <div class="lp-chips"><span class="lp-chip" style="${isActive?'background:var(--neu-bg);color:var(--neu-color)':''}">${counts[p.id]} Wörter</span></div>
+      </div>
+      <div class="lp-name">${escapeHtml(learn.name)}</div>
+      ${isActive?'<div class="lp-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7.5L8 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>':''}
+    </div>`;
+  }).join('')+`<div class="lang-add-profile" onclick="addNewProfile()"><span style="font-size:18px">＋</span><span>Neue Sprache hinzufügen</span></div>`;
+}
+
+async function switchProfile(pid){
+  const{data:profiles}=await supa.from('vl_profiles').select('*').eq('user_id',userId);
+  currentProfile=profiles.find(p=>p.id===pid);
+  localStorage.setItem('vl_pid',pid);
+  await loadWords();await loadTodayProgress();await loadGoal();
+  goalAchievedShown=false;updateMenuUI();showNextWord();
+  closeSubscreen('langProfilesScreen');showToast('Sprache gewechselt');
+}
+
+function addNewProfile(){buildLangGrids();showScreen('onboard2Screen');}
+
+async function openGoal(){
+  closeMenu();await loadTodayProgress();
+  if(goalData){
+    setGoalType(goalData.goal_type);
+    document.getElementById('goalAmountInput').value=goalData.goal_amount;
+    if(goalData.reminder){document.getElementById('reminderToggle').classList.replace('off','on');}
+  }else{
+    setGoalType('daily');
+  }
+  updateGoalProgress();openSubscreen('goalScreen');
+}
+
+function toggleGoalDropdown(){
+  const opts=document.getElementById('goalTypeOptions');
+  const arrow=document.getElementById('goalTypeArrow');
+  const isOpen=opts.classList.toggle('open');
+  arrow.classList.toggle('open',isOpen);
+}
+
+function setGoalType(type){
+  document.getElementById('goalTypeText').textContent=type==='daily'?'Tagesziel':'Wochenziel';
+  document.getElementById('checkDaily').style.display=type==='daily'?'':'none';
+  document.getElementById('checkWeekly').style.display=type==='weekly'?'':'none';
+  document.getElementById('goalUnit').textContent='Vokabeln pro '+(type==='daily'?'Tag':'Woche');
+  // Update reminder text based on type
+  const remSub=document.getElementById('reminderSubText');
+  if(remSub){
+    remSub.textContent=type==='daily'
+      ?'Täglich 20:00 Uhr wenn Ziel nicht erreicht'
+      :'Sonntags 18:00 Uhr wenn Ziel nicht erreicht';
+  }
+  // Close dropdown after selection
+  document.getElementById('goalTypeOptions').classList.remove('open');
+  document.getElementById('goalTypeArrow').classList.remove('open');
+  if(!goalData)goalData={};
+  goalData.goal_type=type;
+  updateGoalProgress();
+}
+
+function adjustGoal(d){const i=document.getElementById('goalAmountInput');i.value=Math.max(1,Math.min(999,(parseInt(i.value)||10)+d));updateGoalProgress();}
+
+function updateGoalProgress(){
+  const amount=parseInt(document.getElementById('goalAmountInput').value||10);
+  const isDaily=(goalData?.goal_type||'daily')==='daily';
+  const current=isDaily?todayCount:weekCount;
+  const pct=Math.min(100,Math.round((current/amount)*100));
+  const periodLabel=isDaily?'Heute':'Diese Woche';
+  document.getElementById('gPLabel').textContent=`${current} / ${amount}`;
+  document.getElementById('gPFill').style.width=pct+'%';
+  document.getElementById('gPMid').textContent=`${current} gelernt`;
+  document.getElementById('gPMax').textContent=amount;
+  // Also update period label if it exists
+  const periodEl=document.querySelector('.goal-progress-top span:first-child');
+  if(periodEl)periodEl.textContent=periodLabel;
+}
+
+function toggleReminder(){
+  const t=document.getElementById('reminderToggle');
+  t.classList.toggle('on');t.classList.toggle('off');
+  if(t.classList.contains('on'))Notification.requestPermission();
+}
+
+async function saveGoal(){
+  const amount=parseInt(document.getElementById('goalAmountInput').value||10);
+  const type=goalData?.goal_type||'daily';
+  const reminder=document.getElementById('reminderToggle').classList.contains('on');
+  if(goalData?.id)await supa.from('vl_goals').update({goal_type:type,goal_amount:amount,reminder}).eq('id',goalData.id);
+  else{const{data}=await supa.from('vl_goals').insert({user_id:userId,profile_id:currentProfile.id,goal_type:type,goal_amount:amount,reminder}).select().single();goalData=data;}
+  goalData={...goalData,goal_type:type,goal_amount:amount,reminder};
+  updateMenuGoalUI();closeSubscreen('goalScreen');showToast('Lernziel gespeichert ✓');
+}
+
+let selectedWordType='';
+function openAddModal(){
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  document.getElementById('addLearnLabel').textContent=learn.name+' '+learn.flag;
+  document.getElementById('addNativeLabel').textContent=native.name+' '+native.flag;
+  document.getElementById('newWordInput').value='';
+  document.getElementById('newWordTrans').value='';
+  document.getElementById('aiBox').style.display='none';
+  document.getElementById('addSaveBtn').disabled=true;
+  pendingSuggestions=[];
+  selectedWordType='';
+  document.querySelectorAll('.word-type-chip').forEach(c=>c.classList.remove('selected'));
+  document.querySelector('.word-type-chip[data-type=""]').classList.add('selected');
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(()=>document.getElementById('newWordInput').focus(),300);
+}
+
+function selectWordType(el){
+  document.querySelectorAll('.word-type-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedWordType=el.getAttribute('data-type');
+}
+
+function checkSaveButton(){
+  const w=document.getElementById('newWordInput').value.trim();
+  const t=document.getElementById('newWordTrans').value.trim();
+  const hasAI=document.querySelectorAll('#aiSuggestions .ai-suggestion.selected').length>0;
+  document.getElementById('addSaveBtn').disabled=!((w&&t)||hasAI);
+}
+
+function onWordInput(val){
+  clearTimeout(aiDebounceTimer);
+  document.getElementById('aiBox').style.display='none';
+  pendingSuggestions=[];
+  checkSaveButton();
+  if(val.trim().length<2)return;
+  // If native field has content, don't fetch suggestions (user is filling manually)
+  const nativeField=document.getElementById('newWordTrans');
+  if(nativeField&&nativeField.value.trim().length>0)return;
+  // Only call AI if API key is set
+  if(localStorage.getItem('vl_api_key')){
+    aiDebounceTimer=setTimeout(()=>fetchAISuggestions(val.trim(),'fromLearn'),700);
+  }
+}
+
+function onWordInputNative(val){
+  clearTimeout(aiDebounceTimer);
+  document.getElementById('aiBox').style.display='none';
+  pendingSuggestions=[];
+  checkSaveButton();
+  if(val.trim().length<2)return;
+  // If learn field has content, don't fetch suggestions (user is filling manually)
+  const learnField=document.getElementById('newWordInput');
+  if(learnField&&learnField.value.trim().length>0)return;
+  // Only call AI if API key is set
+  if(localStorage.getItem('vl_api_key')){
+    aiDebounceTimer=setTimeout(()=>fetchAISuggestions(val.trim(),'fromNative'),700);
+  }
+}
+
+async function fetchAISuggestions(word,direction){
+  direction=direction||'fromLearn';
+  const apiKey=localStorage.getItem('vl_api_key');
+  if(!apiKey){document.getElementById('addSaveBtn').disabled=false;return;}
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  const aiBox=document.getElementById('aiBox');
+  const aiSugg=document.getElementById('aiSuggestions');
+  const aiHint=document.getElementById('aiHint');
+  aiBox.style.display='block';
+  document.getElementById('aiLabel').textContent=`✦ KI-Vorschläge für „${word}"`;
+  aiSugg.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div> Übersetzung wird gesucht…</div>';
+  aiHint.style.display='none';
+  try{
+    const fromLang=direction==='fromLearn'?learn.name:native.name;
+    const toLang=direction==='fromLearn'?native.name:learn.name;
+    const prompt=`Du bist ein ${native.name}-${learn.name} Wörterbuch. Wort in ${fromLang}: "${word}". Übersetze ins ${toLang}. Antworte NUR mit JSON-Array:\n[{"native":"${native.name} Wort","learn":"${learn.name} Wort","type":"verb|noun|phrase|adj|adv|other","note":"optional"}]\nGib 1-4 Einträge. Wenn das Wort verschiedene Bedeutungen hat (z.B. "giro" = Überweisung ODER cool), gib mehrere Einträge.`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'[]';
+    const suggestions=JSON.parse(text.replace(/```json|```/g,'').trim());
+    if(!Array.isArray(suggestions)||!suggestions.length)throw new Error();
+    pendingSuggestions=suggestions;
+    aiSugg.innerHTML=suggestions.map((s,i)=>`<div class="ai-suggestion${i===0?' selected':''}" data-idx="${i}" onclick="toggleAISugg(this,${i})"><div class="ai-check">${i===0?'✓':''}</div><div style="flex:1"><div class="ai-word">${escapeHtml(s.learn)} → ${escapeHtml(s.native)}</div>${s.note?`<div class="ai-note">${escapeHtml(s.note)}</div>`:''}</div><span class="ai-type" style="background:${getTB(s.type)};color:${getTT(s.type)}">${escapeHtml(TL[s.type]||s.type||'')}</span></div>`).join('');
+    aiHint.style.display='block';document.getElementById('addSaveBtn').disabled=false;
+  }catch(e){aiSugg.innerHTML='<div class="ai-error">Keine KI-Vorschläge. Manuell speichern möglich.</div>';document.getElementById('addSaveBtn').disabled=false;}
+}
+
+function getTB(t){return{verb:'var(--accent-light)',noun:'var(--noun-light)',phrase:'var(--phrase-light)',adj:'var(--adj-light)',adv:'var(--adj-light)'}[t]||'#F1F1EF';}
+function getTT(t){return{verb:'var(--accent-text)',noun:'var(--noun-text)',phrase:'var(--phrase-text)',adj:'var(--adj-text)',adv:'var(--adj-text)'}[t]||'var(--muted)';}
+
+function toggleAISugg(el,idx){
+  el.classList.toggle('selected');
+  el.querySelector('.ai-check').textContent=el.classList.contains('selected')?'✓':'';
+  document.getElementById('addSaveBtn').disabled=!document.querySelectorAll('#aiSuggestions .ai-suggestion.selected').length;
+}
+
+async function saveNewWords(){
+  const learnWord=document.getElementById('newWordInput').value.trim();
+  const nativeWord=document.getElementById('newWordTrans').value.trim();
+  const selected=[...document.querySelectorAll('#aiSuggestions .ai-suggestion.selected')];
+  // KI validation only for manual entry (not for AI suggestions which are already validated)
+  const isManualEntry=selected.length===0&&learnWord&&nativeWord;
+  // For multiple AI suggestions: check if meanings are similar via KI before grouping
+  if(selected.length>1&&pendingSuggestions.length>0){
+    const sels=selected.map(el=>{const idx=parseInt(el.dataset.idx,10);return isNaN(idx)?null:pendingSuggestions[idx];}).filter(Boolean);
+    if(sels.length>1){
+      // Group by similar meaning using KI
+      document.getElementById('addSaveBtn').textContent='KI prüft Bedeutungen…';
+      document.getElementById('addSaveBtn').disabled=true;
+      const groups=await groupSuggestionsByMeaning(sels);
+      document.getElementById('addSaveBtn').textContent='Speichern';
+      document.getElementById('addSaveBtn').disabled=false;
+      // Save each group as one entry (with comma-separated translations if similar)
+      let added=0;
+      for(const g of groups){
+        try{
+          const ptCombined=g.map(s=>s.learn).join(', ');
+          const deCombined=g.map(s=>s.native).join(', ');
+          const type=g[0].type||'other';
+          const{data,error}=await supa.from('vl_words').insert({profile_id:currentProfile.id,pt:ptCombined,de:deCombined,type,list:'neu',de_right:0,pt_right:0,imported:false}).select().single();
+          if(error)throw error;
+          if(data){words.push(data);wordsById.set(data.id,data);added++;priorityQueue.unshift(data.id);}
+        }catch(e){
+          console.error('multi-save error',e);
+          showToast('Speichern fehlgeschlagen','wrong');
+        }
+      }
+      priorityQueue=priorityQueue.slice(0,20);
+      updateMenuUI();closeModal('addModal');
+      if(added>0){
+        showToast(`${added} ${added>1?'Einträge':'Eintrag'} hinzugefügt ✓`,'correct');
+        if(document.getElementById('emptyState').classList.contains('visible'))showNextWord();
+      }
+      return;
+    }
+  }
+  if(isManualEntry&&localStorage.getItem('vl_api_key')){
+    // Hide previous hints
+    document.getElementById('kiCorrectionHint').style.display='none';
+    document.getElementById('kiUnsureBox').style.display='none';
+    document.getElementById('addSaveBtn').disabled=true;
+    document.getElementById('addSaveBtn').textContent='KI prüft…';
+    const valid=await validateTranslation(learnWord,nativeWord);
+    document.getElementById('addSaveBtn').textContent='Speichern';
+    document.getElementById('addSaveBtn').disabled=false;
+    if(valid.status==='corrected'&&valid.correctedPt&&valid.correctedDe){
+      // Auto-correct fields
+      document.getElementById('newWordInput').value=valid.correctedPt;
+      document.getElementById('newWordTrans').value=valid.correctedDe;
+      const hint=document.getElementById('kiCorrectionHint');
+      const txt=document.getElementById('kiCorrectionText');
+      let parts=[];
+      if(valid.correctedPt.toLowerCase()!==learnWord.toLowerCase())parts.push(`<s style="color:#9B8E82">${escapeHtml(learnWord)}</s> → <strong>${escapeHtml(valid.correctedPt)}</strong>`);
+      if(valid.correctedDe.toLowerCase()!==nativeWord.toLowerCase())parts.push(`<s style="color:#9B8E82">${escapeHtml(nativeWord)}</s> → <strong>${escapeHtml(valid.correctedDe)}</strong>`);
+      txt.innerHTML=parts.join('<br>');
+      hint.style.display='block';
+      return; // Wait for user to click Save again
+    }else if(valid.status==='unsure'){
+      document.getElementById('kiUnsureBox').style.display='block';
+      document.getElementById('addSaveBtn').style.display='none';
+      return; // Wait for user decision
+    }
+    // 'correct' or 'error' -> proceed with save
+  }
+  // Reset hints
+  document.getElementById('kiCorrectionHint').style.display='none';
+  document.getElementById('kiUnsureBox').style.display='none';
+  document.getElementById('addSaveBtn').style.display='';
+  await actuallySaveNewWords();
+}
+
+async function saveNewWordsForce(){
+  // User chose "Trotzdem speichern" on unsure box
+  document.getElementById('kiUnsureBox').style.display='none';
+  document.getElementById('addSaveBtn').style.display='';
+  await actuallySaveNewWords();
+}
+
+function cancelUnsure(){
+  document.getElementById('kiUnsureBox').style.display='none';
+  document.getElementById('addSaveBtn').style.display='';
+}
+
+async function actuallySaveNewWords(){
+  const learnWord=document.getElementById('newWordInput').value.trim();
+  const nativeWord=document.getElementById('newWordTrans').value.trim();
+  const selected=[...document.querySelectorAll('#aiSuggestions .ai-suggestion.selected')];
+  let toAdd=[];
+  if(selected.length>0&&pendingSuggestions.length>0){
+    selected.forEach(el=>{
+      const idx=parseInt(el.dataset.idx,10);
+      if(!isNaN(idx)){const s=pendingSuggestions[idx];if(s)toAdd.push({pt:s.learn,de:s.native,type:s.type||''});}
+    });
+  }else if(learnWord&&nativeWord){
+    toAdd.push({pt:learnWord,de:nativeWord,type:selectedWordType||''});
+  }else return;
+  let added=0,reset=0,extended=0;
+  let priorityIds=[];
+  for(const w of toAdd){
+    try{
+      const r=await addOrMergeWord({...w,imported:false},'plus');
+      if(r.status==='added'){added++;if(r.id)priorityIds.push(r.id);}
+      else if(r.status==='reset'){reset++;if(r.id)priorityIds.push(r.id);}
+      else if(r.status==='extended'){extended++;if(r.id)priorityIds.push(r.id);}
+    }catch(e){
+      console.error('addOrMergeWord error',e);
+      showToast('Speichern fehlgeschlagen','wrong');
+    }
+  }
+  priorityQueue=[...priorityIds,...priorityQueue].slice(0,20);
+  updateMenuUI();closeModal('addModal');
+  if(added>0)showToast(`${added} Wort${added>1?'er':''} hinzugefügt ✓`,'correct');
+  else if(extended>0)showToast(`Übersetzung ergänzt ✓`,'correct');
+  else if(reset>0)showToast(`Wort zurück in „Neu"`,'correct');
+  if(document.getElementById('emptyState').classList.contains('visible'))showNextWord();
+}
+
+async function handleAddPhoto(input){const file=input.files[0];if(!file)return;closeModal('addModal');await processPhoto(file);input.value='';}
+async function handlePhotoImport(input){const file=input.files[0];if(!file)return;closeModal('photoModal');await processPhoto(file);input.value='';}
+
+async function processPhoto(file){
+  const apiKey=localStorage.getItem('vl_api_key');
+  if(!apiKey){showToast('Kein API Key');return;}
+  showProcessing('Foto wird analysiert…','KI erkennt die Wörter');
+  const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:b64}},{type:'text',text:`Analysiere dieses Bild und extrahiere alle erkennbaren Wörter oder Vokabelpaare.
+
+WICHTIG: Antworte NUR mit gültigem JSON, ohne Markdown-Codeblöcke, ohne Erklärungen.
+
+Wenn das Bild eine Vokabelliste mit ${native.name}-${learn.name} Übersetzungspaaren zeigt (auch handschriftlich), antworte EXAKT so:
+{"type":"pairs","words":[{"native":"${native.name} Wort","learn":"${learn.name} Wort","wordtype":"verb"}]}
+
+Wortarten: verb, noun, phrase, adj, adv, other
+
+Wenn das Bild einzelne Wörter ohne Übersetzungen zeigt (z.B. Speisekarte, Schild, Buchseite), antworte EXAKT so:
+{"type":"words","words":[{"word":"erkanntes Wort"},{"word":"weiteres Wort"}]}
+
+Erkenne ALLE sichtbaren Wörter, auch handgeschriebene. Bei Unsicherheit lieber als "words" antworten.`}]}]})});
+    const data=await res.json();
+    console.log('Photo API response:',data);
+    if(data.error){hideProcessing();showToast('API Fehler: '+(data.error.message||'unbekannt').substring(0,60),'wrong');return;}
+    let text=data.content?.[0]?.text||'';
+    console.log('Raw KI Antwort:',text);
+    text=text.replace(/```json|```/g,'').trim();
+    const jsonMatch=text.match(/\{[\s\S]*\}/);
+    if(jsonMatch)text=jsonMatch[0];
+    let result;
+    try{result=JSON.parse(text);}catch(parseErr){
+      console.error('JSON parse error:',parseErr,'Text was:',text);
+      hideProcessing();showToast('KI-Antwort nicht lesbar – nochmal versuchen','wrong');return;
+    }
+    console.log('Parsed:',result);
+    hideProcessing();
+    if(result.type==='pairs'&&result.words?.length){
+      const pairs=result.words.filter(w=>w.learn&&w.native).map(w=>({pt:w.learn,de:w.native,type:w.wordtype||'other'}));
+      if(!pairs.length){showToast('Keine gültigen Wortpaare gefunden','wrong');return;}
+      const valResult=await importWithValidation(pairs);
+      updateMenuUI();
+      if(document.getElementById('emptyState').classList.contains('visible')&&(valResult.added>0||valResult.extended>0))showNextWord();
+      if(valResult.unsure.length>0)showUnsureScreen(valResult.unsure);
+    }else if(result.type==='words'&&result.words?.length){
+      photoRecognized=result.words.filter(w=>w.word).map(w=>({word:w.word,translated:false,selected:false}));
+      if(!photoRecognized.length){showToast('Keine Wörter erkannt');return;}
+      document.getElementById('photoWordCount').textContent=photoRecognized.length+' gefunden';
+      renderPhotoList();openSubscreen('photoSelectScreen');
+    }else{
+      console.log('Empty or unknown result type');
+      showToast('Keine Wörter erkannt – Foto evtl. unscharf');
+    }
+  }catch(e){
+    hideProcessing();
+    console.error('Photo analyze error:',e);
+    showToast('Fehler: '+(e.message||'unbekannt').substring(0,40),'wrong');
+  }
+}
+
+function renderPhotoList(){
+  const c=document.getElementById('photoWordList');
+  c.innerHTML=photoRecognized.map((w,i)=>`<div class="photo-word-item${w.selected||w.translated?' selected':''}" onclick="tapPhotoWord(${i})"><div style="flex:1"><div class="photo-word-name">${escapeHtml(w.word)}</div>${w.translated?`<div class="photo-word-trans">${escapeHtml(w.learn)} — ${escapeHtml(TL[w.type]||'')}</div>`:''}</div><div class="photo-word-check">${w.selected||w.translated?'<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.5 7.5L8.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</div></div>`).join('');
+  const sel=photoRecognized.filter(w=>w.selected||w.translated).length;
+  document.getElementById('photoSaveBtn').textContent=`Ausgewählte speichern (${sel})`;
+}
+
+async function tapPhotoWord(i){
+  const w=photoRecognized[i];
+  if(w.translated){w.selected=!w.selected;renderPhotoList();return;}
+  const apiKey=localStorage.getItem('vl_api_key');if(!apiKey)return;
+  const native=GL(currentProfile?.native_lang||'de');const learn=GL(currentProfile?.learn_lang||'pt');
+  photoRecognized[i]={...w,translating:true};renderPhotoList();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:`Übersetze "${w.word}" ins ${native.name}. JSON: [{"native":"...","learn":"...","type":"verb|noun|phrase|adj|adv|other"}]`}]})});
+    const data=await res.json();const text=data.content?.[0]?.text||'[]';
+    const s=JSON.parse(text.replace(/```json|```/g,'').trim())[0];
+    if(s)photoRecognized[i]={...w,native:s.native,learn:s.learn,type:s.type,translated:true,selected:true,translating:false};
+    else photoRecognized[i]={...w,translating:false};
+  }catch(e){photoRecognized[i]={...w,translating:false};}
+  renderPhotoList();
+}
+
+async function savePhotoWords(){
+  const toAdd=photoRecognized.filter(w=>(w.selected||w.translated)&&w.learn&&w.native);
+  if(!toAdd.length){showToast('Keine Wörter ausgewählt');return;}
+  const pairs=toAdd.map(w=>({pt:w.learn,de:w.native,type:w.type||'other'}));
+  const result=await importWithValidation(pairs);
+  updateMenuUI();
+  closeSubscreen('photoSelectScreen');
+  if(document.getElementById('emptyState').classList.contains('visible')&&(result.added>0||result.extended>0))showNextWord();
+  if(result.unsure.length>0)showUnsureScreen(result.unsure);
+}
+
+async function handleFileImport(input){
+  const file=input.files[0];if(!file)return;
+  closeModal('fileModal');
+  const text=await file.text();
+  const lines=text.split('\n').filter(l=>l.trim());
+  const pairs=[];
+  for(const line of lines){
+    const parts=line.split(/[,;\-–=\t]/);
+    if(parts.length<2)continue;
+    const pt=parts[0].trim();const de=parts[1].trim();
+    if(!pt||!de)continue;
+    pairs.push({pt,de,type:'other'});
+  }
+  if(!pairs.length){showToast('Keine Wörter erkannt');input.value='';return;}
+  const result=await importWithValidation(pairs);
+  updateMenuUI();
+  if(document.getElementById('emptyState').classList.contains('visible')&&(result.added>0||result.extended>0))showNextWord();
+  if(result.unsure.length>0){
+    showUnsureScreen(result.unsure);
+  }
+  input.value='';
+}
+
+// === Word Edit Modal (from list) ===
+let editingWordId=null;
+let editingWordType='';
+
+function openEditWord(wordId){
+  const w=findWord(wordId);
+  if(!w)return;
+  editingWordId=wordId;
+  editingWordType=w.type||'';
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  document.getElementById('editWordPtLabel').textContent=learn.name+' '+learn.flag;
+  document.getElementById('editWordDeLabel').textContent=native.name+' '+native.flag;
+  document.getElementById('editWordPt').value=w.pt;
+  document.getElementById('editWordDe').value=w.de;
+  // Mark current type
+  document.querySelectorAll('#editWordTypeSelect .word-type-chip').forEach(c=>{
+    c.classList.toggle('selected',c.getAttribute('data-type')===(w.type==='other'?'':w.type));
+  });
+  // Show list info
+  const listLabel={neu:'Neu',ueben:'Üben',beherrscht:'Beherrscht'}[w.list]||w.list;
+  document.getElementById('editWordListInfo').innerHTML=`Aktuell in: <strong>${listLabel}</strong> (${w.de_right}/3 ${native.flag}→${learn.flag}, ${w.pt_right}/3 ${learn.flag}→${native.flag})`;
+  document.getElementById('editWordModal').classList.add('open');
+}
+
+function selectEditWordType(el){
+  document.querySelectorAll('#editWordTypeSelect .word-type-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  editingWordType=el.getAttribute('data-type');
+}
+
+async function saveEditWord(){
+  if(!editingWordId)return;
+  const newPt=document.getElementById('editWordPt').value.trim();
+  const newDe=document.getElementById('editWordDe').value.trim();
+  if(!newPt||!newDe){showToast('Beide Felder ausfüllen','wrong');return;}
+  const w=findWord(editingWordId);
+  if(!w)return;
+  w.pt=newPt;w.de=newDe;w.type=editingWordType||'other';
+  await supa.from('vl_words').update({pt:newPt,de:newDe,type:editingWordType||'other'}).eq('id',editingWordId);
+  closeModal('editWordModal');
+  showToast('Gespeichert ✓','correct');
+  // Refresh list view if open
+  if(currentListType)openWordList(currentListType);
+  editingWordId=null;
+}
+
+async function deleteEditWord(){
+  if(!editingWordId)return;
+  if(!confirm('Wort wirklich löschen?'))return;
+  await supa.from('vl_words').delete().eq('id',editingWordId);
+  words=words.filter(w=>w.id!==editingWordId);
+  wordsById.delete(editingWordId);
+  closeModal('editWordModal');
+  updateMenuUI();
+  // Refresh list view
+  if(currentListType)openWordList(currentListType);
+  showToast('Gelöscht','correct');
+  editingWordId=null;
+}
+
+// Unified word add/merge logic. Used by both the Plus button and Import.
+// mode='plus': User explicitly added word. Exact match -> reset to 'neu' (they don't know it).
+// mode='import': Bulk import. Exact match -> skip (don't disturb existing progress).
+// Returns: 'added' (new entry) | 'extended' (existing entry got translation added) | 'reset' (existing reset to neu) | 'skipped'
+async function addOrMergeWord(w,mode='import'){
+  const exactMatch=words.find(e=>
+    e.pt.toLowerCase()===w.pt.toLowerCase()&&
+    e.de.toLowerCase()===w.de.toLowerCase()
+  );
+  if(exactMatch){
+    if(mode==='plus'){
+      // User pressed plus on a word that exists exactly: they don't know it, reset progress
+      exactMatch.list='neu';exactMatch.de_right=0;exactMatch.pt_right=0;
+      await supa.from('vl_words').update({list:'neu',de_right:0,pt_right:0}).eq('id',exactMatch.id);
+      return{status:'reset',id:exactMatch.id};
+    }
+    return{status:'skipped'};
+  }
+  const partialMatch=words.find(e=>
+    e.pt.toLowerCase()===w.pt.toLowerCase()||
+    e.de.toLowerCase()===w.de.toLowerCase()
+  );
+  if(partialMatch){
+    const samePt=partialMatch.pt.toLowerCase()===w.pt.toLowerCase();
+    const existingTransCount=samePt?partialMatch.de.split(',').length:partialMatch.pt.split(',').length;
+    if(existingTransCount<3){
+      // Extend existing entry with new translation
+      if(samePt){partialMatch.de=partialMatch.de+', '+w.de;}
+      else{partialMatch.pt=partialMatch.pt+', '+w.pt;}
+      partialMatch.list='neu';partialMatch.de_right=0;partialMatch.pt_right=0;
+      await supa.from('vl_words').update({pt:partialMatch.pt,de:partialMatch.de,list:'neu',de_right:0,pt_right:0}).eq('id',partialMatch.id);
+      return{status:'extended',id:partialMatch.id};
+    }
+    // 3+ translations already, fall through to create new entry
+  }
+  // No match (or too many translations) -> insert new
+  const{data}=await supa.from('vl_words').insert({profile_id:currentProfile.id,pt:w.pt,de:w.de,type:w.type||'other',list:'neu',de_right:0,pt_right:0,imported:!!w.imported}).select().single();
+  if(data){words.push(data);wordsById.set(data.id,data);return{status:'added',id:data.id};}
+  return{status:'error'};
+}
+
+// Backwards-compat wrapper: imports return simple status string
+async function addWithDuplicateCheck(w){
+  const r=await addOrMergeWord(w,'import');
+  return r.status;
+}
+// Validate multiple word pairs at once via KI. Returns array of {pt, de, status, correctedPt, correctedDe, type}
+async function validateMultiplePairs(pairs){
+  const apiKey=localStorage.getItem('vl_api_key');
+  if(!apiKey)return pairs.map(p=>({...p,status:'correct'}));
+  const native=GL(currentProfile?.native_lang||'de');
+  const learn=GL(currentProfile?.learn_lang||'pt');
+  const results=[];
+  // Process in batches of 10 to avoid huge prompts
+  for(let i=0;i<pairs.length;i+=10){
+    const batch=pairs.slice(i,i+10);
+    try{
+      const list=batch.map((p,idx)=>`${idx+1}. ${learn.name}: "${p.pt}" / ${native.name}: "${p.de}"`).join('\n');
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:2000,
+          messages:[{role:'user',content:`Prüfe diese ${batch.length} Übersetzungspaare zwischen ${learn.name} und ${native.name}:\n${list}\n\nWICHTIG: Eigennamen (Länder, Städte, Personen, Marken) wie "Brasil"="Brasilien", "Lisboa"="Lissabon" sind KORREKT, nicht unsicher. Standard-Vokabular ist auch korrekt.\n\nMarkiere als "unsure" NUR sehr regionale Slangwörter, ungewöhnliche Umgangssprache oder Wörter die wirklich nicht im Standardwörterbuch stehen.\n\nAntworte NUR mit einem JSON-Array, ein Eintrag pro Paar in gleicher Reihenfolge. Format:\n- {"status":"correct"} wenn korrekt (Standardvokabular, Eigennamen, etablierte Übersetzung)\n- {"status":"corrected","correctedPt":"...","correctedDe":"..."} wenn falsch und du bessere Übersetzung weißt\n- {"status":"unsure"} NUR bei seltener Umgangssprache/Slang\n\nNur JSON-Array, keine Erklärung.`}]
+        })
+      });
+      if(!res.ok){batch.forEach(p=>results.push({...p,status:'correct'}));continue;}
+      const data=await res.json();
+      let text=data.content?.[0]?.text||'';
+      text=text.replace(/```json|```/g,'').trim();
+      const m=text.match(/\[[\s\S]*\]/);
+      if(m)text=m[0];
+      const parsed=JSON.parse(text);
+      batch.forEach((p,idx)=>{
+        const r=parsed[idx]||{status:'correct'};
+        results.push({...p,status:r.status,correctedPt:r.correctedPt,correctedDe:r.correctedDe});
+      });
+    }catch(e){
+      console.error('validateMultiplePairs batch error',e);
+      batch.forEach(p=>results.push({...p,status:'correct'}));
+    }
+  }
+  return results;
+}
+
+// Process import with KI validation. Imports correct/corrected automatically, returns unsure pairs for user review
+async function importWithValidation(pairs){
+  if(!pairs.length)return{added:0,extended:0,unsure:[]};
+  showProcessing('KI prüft Übersetzungen…','Einen Moment bitte');
+  const validated=await validateMultiplePairs(pairs);
+  hideProcessing();
+  let added=0,extended=0;
+  const unsurePairs=[];
+  for(const v of validated){
+    if(v.status==='unsure'){
+      unsurePairs.push(v);
+      continue;
+    }
+    // For corrected, use corrected values
+    const finalPt=v.status==='corrected'&&v.correctedPt?v.correctedPt:v.pt;
+    const finalDe=v.status==='corrected'&&v.correctedDe?v.correctedDe:v.de;
+    const r=await addWithDuplicateCheck({pt:finalPt,de:finalDe,type:v.type||'other',imported:true});
+    if(r==='added')added++;
+    else if(r==='extended')extended++;
+  }
+  return{added,extended,unsure:unsurePairs};
+}
+
+let pendingUnsurePairs=[];
+
+function showUnsureScreen(unsurePairs){
+  pendingUnsurePairs=unsurePairs.map(p=>({...p,decision:'keep'}));
+  const list=document.getElementById('unsureList');
+  document.getElementById('unsureCount').textContent=`${unsurePairs.length} unsicher`;
+  document.getElementById('unsureInfo').innerHTML=`Bei <strong>${unsurePairs.length} ${unsurePairs.length===1?'Wort':'Wörtern'}</strong> konnte die Übersetzung nicht verifiziert werden:`;
+  list.innerHTML=pendingUnsurePairs.map((p,i)=>`
+    <div class="unsure-item" id="unsure-${i}">
+      <div class="unsure-item-header">
+        <div style="font-size:16px;">🤔</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;color:#8A7340;text-transform:uppercase;letter-spacing:0.5px;flex:1;">Nicht verifizierbar</div>
+        <div class="unsure-edit-btn" onclick="editUnsurePair(${i})" title="Bearbeiten">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="#8A7340" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="unsure-words">
+        <span class="unsure-pt" id="up-${i}">${escapeHtml(p.pt)}</span>
+        <span style="color:#C5BDB3;font-size:14px;">=</span>
+        <span class="unsure-de" id="ud-${i}">${escapeHtml(p.de)}</span>
+      </div>
+      <div class="unsure-btns">
+        <button class="unsure-btn unsure-btn-keep selected" id="ubk-${i}" onclick="setUnsureDecision(${i},'keep')">✓ Behalten</button>
+        <button class="unsure-btn unsure-btn-remove" id="ubr-${i}" onclick="setUnsureDecision(${i},'remove')">✗ Entfernen</button>
+      </div>
+    </div>
+  `).join('');
+  openSubscreen('unsureImportScreen');
+}
+
+function setUnsureDecision(idx,decision){
+  pendingUnsurePairs[idx].decision=decision;
+  const keepBtn=document.getElementById('ubk-'+idx);
+  const removeBtn=document.getElementById('ubr-'+idx);
+  if(decision==='keep'){
+    keepBtn.classList.add('selected');keepBtn.classList.remove('unselected');
+    removeBtn.classList.remove('selected');removeBtn.classList.add('unselected');
+  }else{
+    removeBtn.classList.add('selected');removeBtn.classList.remove('unselected');
+    keepBtn.classList.remove('selected');keepBtn.classList.add('unselected');
+  }
+}
+
+let editingUnsureIdx=-1;
+function editUnsurePair(idx){
+  editingUnsureIdx=idx;
+  const p=pendingUnsurePairs[idx];
+  document.getElementById('editUnsurePt').value=p.pt;
+  document.getElementById('editUnsureDe').value=p.de;
+  document.getElementById('editUnsureModal').classList.add('open');
+}
+
+function saveEditUnsure(){
+  if(editingUnsureIdx<0)return;
+  const newPt=document.getElementById('editUnsurePt').value.trim();
+  const newDe=document.getElementById('editUnsureDe').value.trim();
+  if(!newPt||!newDe)return;
+  pendingUnsurePairs[editingUnsureIdx].pt=newPt;
+  pendingUnsurePairs[editingUnsureIdx].de=newDe;
+  document.getElementById('up-'+editingUnsureIdx).textContent=newPt;
+  document.getElementById('ud-'+editingUnsureIdx).textContent=newDe;
+  // Auto-set to "keep" since user edited
+  setUnsureDecision(editingUnsureIdx,'keep');
+  closeModal('editUnsureModal');
+  editingUnsureIdx=-1;
+}
+
+async function finishUnsureImport(){
+  let added=0;
+  for(const p of pendingUnsurePairs){
+    if(p.decision==='keep'){
+      const r=await addWithDuplicateCheck({pt:p.pt,de:p.de,type:p.type||'other',imported:true});
+      if(r==='added'||r==='extended')added++;
+    }
+  }
+  updateMenuUI();
+  closeSubscreen('unsureImportScreen');
+  if(added>0&&document.getElementById('emptyState').classList.contains('visible'))showNextWord();
+  pendingUnsurePairs=[];
+}
+
+async function handleLinkImport(){
+  const url=document.getElementById('linkImportUrl').value.trim();if(!url)return;
+  const apiKey=localStorage.getItem('vl_api_key');if(!apiKey){showToast('Kein API Key');return;}
+  closeModal('linkModal');showProcessing('Link wird gelesen…','KI analysiert die Seite');
+  const native=GL(currentProfile?.native_lang||'de');const learn=GL(currentProfile?.learn_lang||'pt');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Rufe diese URL ab und extrahiere alle ${native.name}-${learn.name} Vokabelpaare: ${url}. JSON: [{"native":"${native.name} Wort","learn":"${learn.name} Wort","type":"verb|noun|phrase|adj|adv|other"}]`}]})});
+    const data=await res.json();
+    const tb=data.content?.find(b=>b.type==='text');
+    const rawPairs=JSON.parse((tb?.text||'[]').replace(/```json|```/g,'').trim());
+    hideProcessing();
+    if(!Array.isArray(rawPairs)||!rawPairs.length){showToast('Keine Wörter gefunden');return;}
+    const pairs=rawPairs.filter(p=>p.learn&&p.native).map(p=>({pt:p.learn,de:p.native,type:p.type||'other'}));
+    document.getElementById('linkImportUrl').value='';
+    const result=await importWithValidation(pairs);
+    updateMenuUI();
+    if(document.getElementById('emptyState').classList.contains('visible')&&(result.added>0||result.extended>0))showNextWord();
+    if(result.unsure.length>0)showUnsureScreen(result.unsure);
+  }catch(e){hideProcessing();console.error(e);showToast('Fehler beim Importieren');}
+}
+
+function openApiKeyModal(){closeMenu();const s=localStorage.getItem('vl_api_key');if(s)document.getElementById('apiKeyInput').value=s;document.getElementById('apiKeyModal').classList.add('open');}
+async function saveApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){closeModal('apiKeyModal');return;}
+  showProcessing('API Key wird geprüft…','Einen Moment bitte');
+  const valid=await validateApiKey(k);
+  hideProcessing();
+  if(valid){
+    localStorage.setItem('vl_api_key',k);
+    if(userId)localStorage.setItem('vl_api_key_user',userId);
+    showToast('API Key gespeichert ✓','correct');
+    closeModal('apiKeyModal');
+  }
+  else{showToast('API Key ungültig','wrong');}
+}
+
+function openPhotoImport(){closeMenu();document.getElementById('photoModal').classList.add('open');}
+function openFileImport(){closeMenu();document.getElementById('fileModal').classList.add('open');}
+function openLinkImport(){closeMenu();document.getElementById('linkModal').classList.add('open');}
+
+let touchStartX=0;
+document.getElementById('wordCard').addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;},{passive:true});
+document.getElementById('wordCard').addEventListener('touchend',e=>{if(!revealed)return;const dx=e.changedTouches[0].clientX-touchStartX;if(Math.abs(dx)>60)handleFeedback(dx>0);},{passive:true});
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function openSubscreen(id){document.getElementById(id).classList.add('open');}
+function closeSubscreen(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function showProcessing(title,text){document.getElementById('processingTitle').textContent=title;document.getElementById('processingText').textContent=text;document.getElementById('processingOverlay').classList.add('open');}
+function hideProcessing(){document.getElementById('processingOverlay').classList.remove('open');}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+init().catch(e=>{console.error(e);showScreen('errorScreen');});
+
+// Register service worker for offline support
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('SW registration failed:',e));
+  });
+}
+
+// Online/offline status
+function updateOnlineStatus(){
+  const indicator=document.getElementById('offlineIndicator');
+  if(!indicator)return;
+  if(navigator.onLine){
+    indicator.classList.remove('show');
+    // Try to flush pending writes when back online
+    flushPendingWrites();
+  }else{
+    indicator.classList.add('show');
+  }
+}
+window.addEventListener('online',updateOnlineStatus);
+window.addEventListener('offline',updateOnlineStatus);
+setTimeout(updateOnlineStatus,500);
+
+// Pending writes queue: store DB operations that fail (offline) and retry later
+function queuePendingWrite(op){
+  try{
+    const queue=JSON.parse(localStorage.getItem('vl_pending_writes')||'[]');
+    queue.push({...op,ts:Date.now()});
+    localStorage.setItem('vl_pending_writes',JSON.stringify(queue));
+  }catch(e){console.warn('Could not queue pending write',e);}
+}
+
+async function flushPendingWrites(){
+  if(!navigator.onLine||!supa||!userId)return;
+  let queue=[];
+  try{queue=JSON.parse(localStorage.getItem('vl_pending_writes')||'[]');}catch(e){return;}
+  if(queue.length===0)return;
+  const stillFailed=[];
+  for(const op of queue){
+    try{
+      if(op.type==='update_word'){
+        await supa.from('vl_words').update(op.payload).eq('id',op.id);
+      }else if(op.type==='insert_progress'){
+        await supa.from('vl_progress').insert(op.payload);
+      }else if(op.type==='update_progress'){
+        await supa.from('vl_progress').update(op.payload).eq('id',op.id);
+      }
+    }catch(e){
+      stillFailed.push(op);
+    }
+  }
+  localStorage.setItem('vl_pending_writes',JSON.stringify(stillFailed));
+  if(queue.length>stillFailed.length){
+    showToast(`${queue.length-stillFailed.length} Änderungen synchronisiert ✓`,'correct');
+  }
+}
+</script>
+</body>
+</html>
